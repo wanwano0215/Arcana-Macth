@@ -8,10 +8,11 @@ body {
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(8, 1fr);
     gap: 10px;
     margin: 0 auto;
     max-width: 1200px;
+    padding: 20px;
 }
 
 .memory-card {
