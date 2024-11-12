@@ -9,9 +9,12 @@ app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "memory-game-secret")
 
-# Configure Flask-Session
+# Configure Flask-Session with more robust settings
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = '.flask_session/'
+app.config['SESSION_PERMANENT'] = False
+app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes
+app.config['SESSION_USE_SIGNER'] = True
 Session(app)
 
 @app.route('/')
@@ -21,6 +24,7 @@ def index():
         if 'game_state' not in session:
             game_state = GameState()
             session['game_state'] = game_state.to_dict()
+            session.modified = True
             app.logger.info("New game state initialized")
         return render_template('index.html')
     except Exception as e:
@@ -30,13 +34,16 @@ def index():
 @app.route('/flip/<int:card_index>', methods=['POST'])
 def flip_card(card_index):
     try:
+        # Ensure session directory exists
+        os.makedirs('.flask_session', exist_ok=True)
+        
         if 'game_state' not in session:
-            app.logger.warning("Session expired, creating new game state")
             game_state = GameState()
             session['game_state'] = game_state.to_dict()
+            session.modified = True
             return jsonify({
                 'valid': False,
-                'message': 'Session expired. Starting new game.'
+                'message': '新しいゲームを開始します'
             })
             
         game_state = GameState.from_dict(session['game_state'])
@@ -52,10 +59,14 @@ def flip_card(card_index):
         return jsonify(result)
     except Exception as e:
         app.logger.error(f"Error processing flip: {str(e)}")
+        # Create new game state if there's an error
+        game_state = GameState()
+        session['game_state'] = game_state.to_dict()
+        session.modified = True
         return jsonify({
             'valid': False,
-            'message': 'An error occurred. Please try again.'
-        }), 500
+            'message': 'エラーが発生しました。新しいゲームを開始します。'
+        })
 
 @app.route('/new-game', methods=['POST'])
 def new_game():

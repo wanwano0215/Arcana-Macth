@@ -17,6 +17,20 @@ class GameState:
         # Ensure card_index is integer
         card_index = int(card_index)
         
+        # Validate game state
+        if not 0 <= card_index < len(self.cards):
+            return {
+                'valid': False,
+                'message': '無効なカードです'
+            }
+            
+        # Add explicit state check
+        if self.first_card == card_index:
+            return {
+                'valid': False,
+                'message': '同じカードは選択できません'
+            }
+        
         if self.cards[card_index]['matched'] or self.cards[card_index]['flipped']:
             return {
                 'valid': False,

@@ -60,10 +60,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const card = event.target.closest('.memory-card');
-        if (!card || card.classList.contains('flipped') || card.classList.contains('matched')) {
+        if (!card || 
+            card.classList.contains('flipped') || 
+            card.classList.contains('matched') ||
+            card.classList.contains('processing')) {
             return;
         }
 
+        // Add processing class during server communication
+        card.classList.add('processing');
         isProcessing = true;
         const cardIndex = parseInt(card.dataset.index);
 
@@ -87,7 +92,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
-                    isProcessing = false;
                     return;
                 }
 
@@ -121,12 +125,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 displayError(data.message);
             }
         } catch (error) {
-            // Improved error logging with proper error message extraction
             const errorMessage = error.message || 'Unknown error occurred';
             console.error('Error:', errorMessage);
             displayError('通信エラーが発生しました: ' + errorMessage);
+            unflipCard(card);
         } finally {
             isProcessing = false;
+            card.classList.remove('processing');
         }
     }
 
@@ -154,7 +159,6 @@ document.addEventListener('DOMContentLoaded', function() {
             statusMessage.classList.remove('alert-danger');
             statusMessage.classList.add('alert-info');
         } catch (error) {
-            // Improved error logging with proper error message extraction
             const errorMessage = error.message || 'Unknown error occurred';
             console.error('Error starting new game:', errorMessage);
             displayError('新しいゲームを開始できませんでした: ' + errorMessage);
