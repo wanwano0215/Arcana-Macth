@@ -57,7 +57,7 @@ def recover_session():
 
 # Rate limiting
 request_times = {}
-RATE_LIMIT = 0.2  # Reduced from 0.3 to 0.2 seconds
+RATE_LIMIT = 0.8  # Increased from 0.5 to 0.8 seconds for smoother gameplay
 CLEANUP_INTERVAL = 60  # Cleanup every minute
 
 def cleanup_request_times():

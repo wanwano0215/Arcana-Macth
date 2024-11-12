@@ -184,6 +184,29 @@ body {
     transition: all 0.3s ease;
 }
 
+@keyframes gameClearPulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.5); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+
+@keyframes celebrationBorder {
+    0% { box-shadow: 0 0 10px gold; }
+    50% { box-shadow: 0 0 30px gold, 0 0 50px gold; }
+    100% { box-shadow: 0 0 10px gold; }
+}
+
+.game-clear {
+    animation: gameClearPulse 1.5s ease-in-out infinite;
+    color: #ffd700;
+    font-size: 2em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.celebration {
+    animation: celebrationBorder 2s ease-in-out infinite;
+}
+
 .btn-primary {
     background-color: #4a90e2;
     border-color: #4a90e2;

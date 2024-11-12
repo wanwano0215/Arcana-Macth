@@ -29,8 +29,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         firstCardFlipped = false;
         statusMessage.textContent = 'カードを2枚めくってください';
-        statusMessage.classList.remove('alert-danger', 'alert-warning');
+        statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
         statusMessage.classList.add('alert-info');
+        cardGrid.style.animation = 'none';
+        document.querySelectorAll('.matched').forEach(card => {
+            card.classList.remove('celebration');
+        });
     }
 
     function flipCard(card, value) {
@@ -75,6 +79,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function makeRequestWithRetry(url, options, retries = MAX_RETRIES) {
+        let delay = 300;  // Start with 300ms delay
         for (let i = 0; i < retries; i++) {
             try {
                 const response = await fetch(url, options);
@@ -83,14 +88,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (response.status === 429) {
                     const data = await response.json();
-                    // Don't show error message for rate limits
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    statusMessage.textContent = '少々お待ちください...';
+                    // Exponential backoff with jitter
+                    await new Promise(resolve => setTimeout(resolve, delay + Math.random() * 100));
+                    delay *= 2;  // Double the delay for next retry
                     continue;
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
             } catch (error) {
                 if (i === retries - 1) throw error;
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;  // Double the delay for next retry
             }
         }
         throw new Error('Max retries reached');
@@ -159,6 +167,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if (data.game_over) {
                         statusMessage.textContent = data.message;
+                        statusMessage.classList.add('game-clear');
+                        
+                        // Add celebration effect to all matched cards
+                        document.querySelectorAll('.matched').forEach(card => {
+                            card.classList.add('celebration');
+                        });
+                        
+                        // Play celebration animation
+                        cardGrid.style.animation = 'none';
+                        cardGrid.offsetHeight; // Trigger reflow
+                        cardGrid.style.animation = 'celebrationBorder 2s ease-in-out infinite';
                     }
                 }
             } else {
@@ -187,7 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
             initializeBoard();
             updateScore(0);
             statusMessage.textContent = 'カードを2枚めくってください';
-            statusMessage.classList.remove('alert-danger', 'alert-warning');
+            statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
             statusMessage.classList.add('alert-info');
         } catch (error) {
             console.error('Error starting new game:', error.message);
