@@ -32,7 +32,7 @@ class GameState:
                 'card_index': card_index,
                 'card_value': self.cards[card_index]['value'],
                 'turn_complete': False,
-                'message': 'Choose your second card'
+                'message': 'カードを2枚めくってください'
             }
         
         # Second card

@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cardGrid.appendChild(createCard(i));
         }
         firstCardFlipped = false;
-        statusMessage.textContent = 'Choose your first card';
+        statusMessage.textContent = 'カードを2枚めくってください';
     }
 
     function flipCard(card, value) {
@@ -45,12 +45,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function displayError(message) {
-        statusMessage.textContent = message || 'An error occurred. Please try again.';
+        statusMessage.textContent = message || 'エラーが発生しました。もう一度お試しください。';
         statusMessage.classList.remove('alert-info');
         statusMessage.classList.add('alert-danger');
         setTimeout(() => {
             statusMessage.classList.remove('alert-danger');
             statusMessage.classList.add('alert-info');
+            statusMessage.textContent = 'カードを2枚めくってください';
         }, 3000);
     }
 
@@ -110,15 +111,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.game_over) {
                         statusMessage.textContent = data.message;
                     } else {
-                        statusMessage.textContent = 'Choose your first card';
+                        statusMessage.textContent = 'カードを2枚めくってください';
                     }
                 }
             } else {
                 displayError(data.message);
             }
         } catch (error) {
-            console.error('Error:', error.message || error.toString()); // Fixed error logging
-            displayError();
+            console.error('Error:', error.message || error.toString());
+            displayError('通信エラーが発生しました');
         } finally {
             isProcessing = false;
         }
@@ -144,12 +145,12 @@ document.addEventListener('DOMContentLoaded', function() {
             await response.json();
             initializeBoard();
             updateScore(0);
-            statusMessage.textContent = 'Choose your first card';
+            statusMessage.textContent = 'カードを2枚めくってください';
             statusMessage.classList.remove('alert-danger');
             statusMessage.classList.add('alert-info');
         } catch (error) {
-            console.error('Error starting new game:', error.message || error.toString()); // Fixed error logging
-            displayError('Failed to start new game');
+            console.error('Error starting new game:', error.message || error.toString());
+            displayError('新しいゲームを開始できませんでした');
         }
     }
 
