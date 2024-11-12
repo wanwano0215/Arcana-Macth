@@ -8,10 +8,11 @@ body {
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(11, 1fr);
+    grid-template-rows: repeat(4, 1fr);
     gap: 10px;
     margin: 0 auto;
-    max-width: 1200px;
+    max-width: 1400px;  /* Increased to accommodate wider layout */
     padding: 20px;
 }
 
