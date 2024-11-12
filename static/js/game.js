@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const cardGrid = document.getElementById('card-grid');
     const statusMessage = document.getElementById('status-message');
     const playerScoreElement = document.getElementById('player-score');
-    const cpuScoreElement = document.getElementById('cpu-score');
     const newGameBtn = document.getElementById('new-game-btn');
 
     let isProcessing = false;
@@ -45,6 +44,16 @@ document.addEventListener('DOMContentLoaded', function() {
         card.classList.add('matched');
     }
 
+    function displayError(message) {
+        statusMessage.textContent = message || 'エラーが発生しました。もう一度お試しください。';
+        statusMessage.classList.remove('alert-info');
+        statusMessage.classList.add('alert-danger');
+        setTimeout(() => {
+            statusMessage.classList.remove('alert-danger');
+            statusMessage.classList.add('alert-info');
+        }, 3000);
+    }
+
     async function handleCardClick(event) {
         if (isProcessing) {
             return;
@@ -59,7 +68,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const cardIndex = parseInt(card.dataset.index);
 
         try {
-            const response = await fetch(`/flip/${cardIndex}`);
+            const response = await fetch(`/flip/${cardIndex}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             const data = await response.json();
 
             if (data.valid) {
@@ -80,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const firstCard = document.querySelector(`.memory-card[data-index="${data.first_card}"]`);
                         markAsMatched(card);
                         markAsMatched(firstCard);
-                        updateScores(data.player_score, data.cpu_score);
+                        updateScore(data.player_score);
                     } else {
                         const firstCard = document.querySelector(`.memory-card[data-index="${data.first_card}"]`);
                         await new Promise(resolve => setTimeout(resolve, 500));
@@ -88,63 +107,53 @@ document.addEventListener('DOMContentLoaded', function() {
                         unflipCard(firstCard);
                     }
 
-                    // Handle CPU's turn
-                    if (data.cpu_moves) {
-                        statusMessage.textContent = 'CPUの番です';
-                        await processCPUMoves(data.cpu_moves, data.cpu_match);
-                        updateScores(data.player_score, data.cpu_score);
+                    if (data.game_over) {
+                        statusMessage.textContent = data.message;
+                    } else {
                         statusMessage.textContent = '1枚目のカードを選んでください';
                     }
                 }
             } else {
-                statusMessage.textContent = data.message;
+                displayError(data.message);
             }
         } catch (error) {
-            console.error('Error:', error);
-            statusMessage.textContent = 'エラーが発生しました';
+            console.error('Error:', error.message);
+            displayError();
         } finally {
             isProcessing = false;
         }
     }
 
-    async function processCPUMoves(moves, isMatch) {
-        for (const move of moves) {
-            const card = document.querySelector(`.memory-card[data-index="${move.index}"]`);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            flipCard(card, move.value);
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        if (!isMatch) {
-            for (const move of moves) {
-                const card = document.querySelector(`.memory-card[data-index="${move.index}"]`);
-                unflipCard(card);
-            }
-        } else {
-            for (const move of moves) {
-                const card = document.querySelector(`.memory-card[data-index="${move.index}"]`);
-                markAsMatched(card);
-            }
-        }
-    }
-
-    function updateScores(playerScore, cpuScore) {
+    function updateScore(playerScore) {
         playerScoreElement.textContent = playerScore;
-        cpuScoreElement.textContent = cpuScore;
     }
 
-    newGameBtn.addEventListener('click', async () => {
+    async function startNewGame() {
         try {
-            await fetch('/new-game');
-            initializeBoard();
-            updateScores(0, 0);
-            statusMessage.textContent = '1枚目のカードを選んでください';
-        } catch (error) {
-            console.error('Error starting new game:', error);
-        }
-    });
+            const response = await fetch('/new-game', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            await response.json();
+            initializeBoard();
+            updateScore(0);
+            statusMessage.textContent = '1枚目のカードを選んでください';
+            statusMessage.classList.remove('alert-danger');
+            statusMessage.classList.add('alert-info');
+        } catch (error) {
+            console.error('Error starting new game:', error.message);
+            displayError('新しいゲームの開始に失敗しました');
+        }
+    }
+
+    newGameBtn.addEventListener('click', startNewGame);
     cardGrid.addEventListener('click', handleCardClick);
     initializeBoard();
 });
