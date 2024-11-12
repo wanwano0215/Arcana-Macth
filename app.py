@@ -91,7 +91,7 @@ def service_unavailable(error):
 
 # Rate limiting
 request_times = {}
-RATE_LIMIT = 1.0  # Increased to 1.0 seconds between requests
+RATE_LIMIT = 0.3  # Reduced from 1.0 to 0.3 seconds
 CLEANUP_INTERVAL = 60  # Cleanup every minute
 
 def cleanup_request_times():
@@ -191,3 +191,6 @@ def serve_static(filename):
     except Exception as e:
         logger.error(f"Error serving static file {filename}: {str(e)}")
         return jsonify({'error': 'Static file not found'}), 404
+
+if __name__ == '__main__':
+    app.run(debug=True)

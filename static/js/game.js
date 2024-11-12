@@ -63,14 +63,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function displayError(message, isRateLimit = false) {
-        statusMessage.textContent = message || 'エラーが発生しました。少々お待ちください。';
-        // Add visual feedback
-        statusMessage.classList.add(isRateLimit ? 'alert-warning' : 'alert-danger');
-        setTimeout(() => {
-            statusMessage.classList.remove('alert-danger', 'alert-warning');
-            statusMessage.classList.add('alert-info');
-            statusMessage.textContent = 'カードを2枚めくってください';
-        }, 3000);
+        if (!isRateLimit) {
+            statusMessage.textContent = message || 'エラーが発生しました。もう一度お試しください。';
+            statusMessage.classList.add('alert-danger');
+            setTimeout(() => {
+                statusMessage.classList.remove('alert-danger');
+                statusMessage.classList.add('alert-info');
+                statusMessage.textContent = 'カードを2枚めくってください';
+            }, 3000);
+        }
     }
 
     async function makeRequestWithRetry(url, options, retries = MAX_RETRIES) {
@@ -80,24 +81,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (response.ok) {
                     return await response.json();
                 }
-                if (response.status === 503) {
-                    const delay = Math.min(1000 * Math.pow(2, i), 5000);
-                    console.warn(`Server busy (503), retrying in ${delay}ms...`);
-                    statusMessage.textContent = '通信中です。少々お待ちください...';
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    continue;
-                }
                 if (response.status === 429) {
                     const data = await response.json();
-                    displayError(data.message, true);
-                    throw new Error('Rate limit exceeded');
+                    // Don't show error message for rate limits
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    continue;
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
             } catch (error) {
-                console.warn(`Attempt ${i + 1} failed:`, error.message);
                 if (i === retries - 1) throw error;
-                const delay = Math.min(1000 * Math.pow(2, i), 5000);
-                await new Promise(resolve => setTimeout(resolve, delay));
+                await new Promise(resolve => setTimeout(resolve, 300));
             }
         }
         throw new Error('Max retries reached');
@@ -111,17 +104,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const card = event.target.closest('.memory-card');
         if (!card || 
             card.classList.contains('flipped') || 
-            card.classList.contains('matched') ||
-            card.classList.contains('processing')) {
+            card.classList.contains('matched')) {
             return;
         }
 
-        card.classList.add('processing');
         isProcessing = true;
-        showLoadingState(card, true);
-        const cardIndex = parseInt(card.dataset.index);
-
         try {
+            const cardIndex = parseInt(card.dataset.index);
             const data = await makeRequestWithRetry(`/flip/${cardIndex}`, {
                 method: 'POST',
                 headers: {
@@ -131,10 +120,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (data.valid) {
                 flipCard(card, data.card_value);
-                statusMessage.textContent = data.message;
-
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
+                    statusMessage.textContent = data.message;
                     return;
                 }
 
@@ -169,12 +157,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Error:', error.message);
-            displayError('通信エラーが発生しました。もう一度お試しください。');
-            unflipCard(card);
+            if (error.message !== 'Rate limit exceeded') {
+                displayError('通信エラーが発生しました。もう一度お試しください。');
+            }
         } finally {
             isProcessing = false;
-            card.classList.remove('processing');
-            showLoadingState(card, false);
         }
     }
 
