@@ -1,0 +1,142 @@
+/* Import Noto Sans JP from Google Fonts instead of local file */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap');
+
+body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background-color: #f5f5f5;
+}
+
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    margin: 0 auto;
+    max-width: 1200px;
+}
+
+.memory-card {
+    aspect-ratio: 2/3;
+    perspective: 1000px;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.memory-card.disabled {
+    cursor: not-allowed;
+}
+
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+}
+
+.memory-card.flipped .card-inner {
+    transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-front {
+    background-color: #4a90e2;
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.card-back {
+    background-color: white;
+    transform: rotateY(180deg);
+    border: 2px solid #4a90e2;
+    font-weight: 500;
+}
+
+.matched .card-back {
+    background-color: #e8f5e9;
+    border-color: #4caf50;
+}
+
+.score-board {
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#status-message {
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    .memory-card {
+        font-size: 0.8em;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    h3 {
+        font-size: 1.2rem;
+    }
+    
+    #status-message {
+        font-size: 1rem;
+    }
+}
+
+/* Animation improvements */
+.memory-card:hover {
+    transform: scale(1.02);
+}
+
+.memory-card.matched {
+    animation: matchPulse 0.5s ease-in-out;
+}
+
+@keyframes matchPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Additional UI improvements */
+.btn-primary {
+    background-color: #4a90e2;
+    border-color: #4a90e2;
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #357abd;
+    border-color: #357abd;
+    transform: translateY(-2px);
+}
+
+.alert {
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+/* Prevent text selection on cards */
+.memory-card {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
