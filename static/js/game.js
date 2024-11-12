@@ -43,6 +43,13 @@ document.addEventListener('DOMContentLoaded', function() {
         card.classList.add('matched');
     }
 
+    function updateScore(score) {
+        const playerScoreElement = document.getElementById('player-score');
+        if (playerScoreElement) {
+            playerScoreElement.textContent = score;
+        }
+    }
+
     function displayError(message) {
         statusMessage.textContent = message || 'エラーが発生しました。もう一度お試しください。';
         statusMessage.classList.remove('alert-info');
@@ -89,6 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.valid) {
                 flipCard(card, data.card_value);
                 statusMessage.textContent = data.message;
+                updateScore(data.player_score); // Update score on every valid move
 
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
@@ -100,16 +108,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (data.turn_complete) {
                     if (data.is_match) {
-                        const firstCard = document.querySelector(`.memory-card[data-index="${data.first_card}"]`);
+                        const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
                         markAsMatched(card);
                         markAsMatched(firstCard);
-                        updateScore(data.player_score);
+                        updateScore(data.player_score);  // Update score after match
                         statusMessage.classList.add('match-highlight');
                         setTimeout(() => {
                             statusMessage.classList.remove('match-highlight');
                         }, 1500);
                     } else {
-                        const firstCard = document.querySelector(`.memory-card[data-index="${data.first_card}"]`);
+                        const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
                         await new Promise(resolve => setTimeout(resolve, 500));
                         unflipCard(card);
                         unflipCard(firstCard);
@@ -133,10 +141,6 @@ document.addEventListener('DOMContentLoaded', function() {
             isProcessing = false;
             card.classList.remove('processing');
         }
-    }
-
-    function updateScore(playerScore) {
-        playerScoreElement.textContent = playerScore;
     }
 
     async function startNewGame() {

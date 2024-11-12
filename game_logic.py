@@ -46,7 +46,8 @@ class GameState:
                 'card_index': card_index,
                 'card_value': self.cards[card_index]['value'],
                 'turn_complete': False,
-                'message': 'カードを2枚めくってください'
+                'message': 'カードを2枚めくってください',
+                'player_score': self.player_score  # Include current score
             }
         
         # Second card
@@ -55,6 +56,11 @@ class GameState:
         second_card_value = self.cards[second_card]['value']
         is_match = first_card_value == second_card_value
         
+        if is_match:
+            self.cards[self.first_card]['matched'] = True
+            self.cards[second_card]['matched'] = True
+            self.player_score += 1
+        
         result = {
             'valid': True,
             'first_card': self.first_card,
@@ -62,15 +68,11 @@ class GameState:
             'card_value': second_card_value,
             'is_match': is_match,
             'turn_complete': True,
-            'player_score': self.player_score,
+            'player_score': self.player_score,  # Updated score included here
             'message': '🎉 Match! 🎉' if is_match else 'No match!'
         }
         
-        if is_match:
-            self.cards[self.first_card]['matched'] = True
-            self.cards[second_card]['matched'] = True
-            self.player_score += 1
-        else:
+        if not is_match:
             # Reset cards after delay (handled by frontend)
             self.cards[self.first_card]['flipped'] = False
             self.cards[second_card]['flipped'] = False
