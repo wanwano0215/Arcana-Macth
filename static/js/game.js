@@ -135,21 +135,30 @@ document.addEventListener('DOMContentLoaded', function() {
                         markAsMatched(card);
                         markAsMatched(firstCard);
                         updateScore(data.player_score);
+                        
+                        // Show match animation and message
+                        statusMessage.textContent = '🎉 Match! 🎉';
                         statusMessage.classList.add('match-highlight');
+                        
+                        // Add confetti effect
+                        card.classList.add('match-effect');
+                        firstCard.classList.add('match-effect');
+                        
                         setTimeout(() => {
                             statusMessage.classList.remove('match-highlight');
+                            card.classList.remove('match-effect');
+                            firstCard.classList.remove('match-effect');
                         }, 1500);
                     } else {
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
                         await new Promise(resolve => setTimeout(resolve, 500));
                         unflipCard(card);
                         unflipCard(firstCard);
+                        statusMessage.textContent = 'カードを2枚めくってください';
                     }
 
                     if (data.game_over) {
                         statusMessage.textContent = data.message;
-                    } else {
-                        statusMessage.textContent = 'カードを2枚めくってください';
                     }
                 }
             } else {

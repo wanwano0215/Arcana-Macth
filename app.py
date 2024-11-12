@@ -55,43 +55,9 @@ def recover_session():
         logger.error(f"Session recovery failed: {str(e)}", exc_info=True)
         return False
 
-# Request logging middleware
-@app.before_request
-def log_request_info():
-    logger.info(f'Request: {request.method} {request.url} from {request.remote_addr}')
-    if not os.path.exists(app.config['SESSION_FILE_DIR']):
-        os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
-    
-    if not recover_session():
-        return jsonify({'error': 'Session initialization failed'}), 500
-
-@app.after_request
-def after_request(response):
-    logger.info(f'Response: {response.status} - Size: {response.content_length}')
-    return response
-
-# Error handlers
-@app.errorhandler(404)
-def not_found_error(error):
-    logger.warning(f'404 Error: {request.url}')
-    return jsonify({'error': 'Not found', 'message': 'リクエストされたページは存在しません'}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    logger.error(f'500 Error: {str(error)}', exc_info=True)
-    return jsonify({'error': 'Internal server error', 'message': 'サーバーエラーが発生しました'}), 500
-
-@app.errorhandler(503)
-def service_unavailable(error):
-    logger.error(f'503 Error: {str(error)}')
-    return jsonify({
-        'error': 'Service temporarily unavailable',
-        'message': 'サーバーが混雑しています。少々お待ちください。'
-    }), 503
-
 # Rate limiting
 request_times = {}
-RATE_LIMIT = 0.3  # Reduced from 1.0 to 0.3 seconds
+RATE_LIMIT = 0.2  # Reduced from 0.3 to 0.2 seconds
 CLEANUP_INTERVAL = 60  # Cleanup every minute
 
 def cleanup_request_times():
@@ -193,4 +159,4 @@ def serve_static(filename):
         return jsonify({'error': 'Static file not found'}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
