@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const newGameBtn = document.getElementById('new-game-btn');
 
     let isProcessing = false;
+    let firstCardFlipped = false;
     
     function createCard(index) {
         const card = document.createElement('div');
@@ -26,6 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 0; i < 44; i++) {
             cardGrid.appendChild(createCard(i));
         }
+        firstCardFlipped = false;
+        statusMessage.textContent = '1枚目のカードを選んでください';
     }
 
     function flipCard(card, value) {
@@ -43,10 +46,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function handleCardClick(event) {
-        if (isProcessing) return;
+        if (isProcessing) {
+            return;
+        }
 
         const card = event.target.closest('.memory-card');
-        if (!card || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+        if (!card || card.classList.contains('flipped') || card.classList.contains('matched')) {
+            return;
+        }
 
         isProcessing = true;
         const cardIndex = parseInt(card.dataset.index);
@@ -57,6 +64,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (data.valid) {
                 flipCard(card, data.card_value);
+                statusMessage.textContent = data.message;
+
+                if (!firstCardFlipped) {
+                    firstCardFlipped = true;
+                    isProcessing = false;
+                    return;
+                }
+
+                firstCardFlipped = false;
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
                 if (data.turn_complete) {
                     if (data.is_match) {
@@ -65,8 +82,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         markAsMatched(firstCard);
                         updateScores(data.player_score, data.cpu_score);
                     } else {
-                        await new Promise(resolve => setTimeout(resolve, 1000));
                         const firstCard = document.querySelector(`.memory-card[data-index="${data.first_card}"]`);
+                        await new Promise(resolve => setTimeout(resolve, 500));
                         unflipCard(card);
                         unflipCard(firstCard);
                     }
@@ -76,22 +93,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         statusMessage.textContent = 'CPUの番です';
                         await processCPUMoves(data.cpu_moves, data.cpu_match);
                         updateScores(data.player_score, data.cpu_score);
+                        statusMessage.textContent = '1枚目のカードを選んでください';
                     }
                 }
+            } else {
+                statusMessage.textContent = data.message;
             }
         } catch (error) {
             console.error('Error:', error);
+            statusMessage.textContent = 'エラーが発生しました';
         } finally {
             isProcessing = false;
-            statusMessage.textContent = 'あなたの番です';
         }
     }
 
     async function processCPUMoves(moves, isMatch) {
         for (const move of moves) {
             const card = document.querySelector(`.memory-card[data-index="${move.index}"]`);
-            flipCard(card, move.value);
             await new Promise(resolve => setTimeout(resolve, 500));
+            flipCard(card, move.value);
         }
 
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -119,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
             await fetch('/new-game');
             initializeBoard();
             updateScores(0, 0);
-            statusMessage.textContent = 'あなたの番です';
+            statusMessage.textContent = '1枚目のカードを選んでください';
         } catch (error) {
             console.error('Error starting new game:', error);
         }
