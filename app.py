@@ -20,7 +20,7 @@ Session(app)
 
 # Rate limiting
 request_times = {}
-RATE_LIMIT = 0.1  # Minimum time between requests in seconds
+RATE_LIMIT = 0.3  # Increased minimum time between requests
 CLEANUP_INTERVAL = 300  # Clean up every 5 minutes
 last_cleanup = datetime.now()
 
@@ -36,27 +36,36 @@ def cleanup_request_times():
         last_cleanup = current_time
 
 def rate_limit():
-    """Rate limiting with session key"""
-    cleanup_request_times()
     current_time = datetime.now()
-    session_key = str(id(session))
+    session_key = str(session.get('id', os.urandom(16).hex()))
+    if 'id' not in session:
+        session['id'] = session_key
+        session.modified = True
+    
     last_request_time = request_times.get(session_key)
     
     if last_request_time and (current_time - last_request_time) < timedelta(seconds=RATE_LIMIT):
         return True
-        
+    
     request_times[session_key] = current_time
     return False
+
+def validate_session():
+    """Check if session is valid and initialize if needed"""
+    if 'id' not in session or 'game_state' not in session:
+        session.clear()
+        session['id'] = os.urandom(16).hex()
+        game_state = GameState()
+        session['game_state'] = game_state.to_dict()
+        session.modified = True
+        return False
+    return True
 
 @app.route('/')
 def index():
     try:
-        # Initialize new game state if not exists
-        if 'game_state' not in session:
-            game_state = GameState()
-            session['game_state'] = game_state.to_dict()
-            session.modified = True
-            app.logger.info("New game state initialized")
+        session.permanent = True
+        validate_session()
         return render_template('index.html')
     except Exception as e:
         app.logger.error(f"Error in index route: {str(e)}")
@@ -65,6 +74,8 @@ def index():
 @app.route('/flip/<int:card_index>', methods=['POST'])
 def flip_card(card_index):
     try:
+        session.permanent = True
+        
         # Rate limiting check with proper error response
         if rate_limit():
             return jsonify({
@@ -72,17 +83,15 @@ def flip_card(card_index):
                 'message': '操作が早すぎます。少し待ってから試してください。'
             }), 429
 
-        # Ensure session directory exists
-        os.makedirs('.flask_session', exist_ok=True)
-        
-        if 'game_state' not in session:
-            game_state = GameState()
-            session['game_state'] = game_state.to_dict()
-            session.modified = True
+        # Validate session and reinitialize if invalid
+        if not validate_session():
             return jsonify({
                 'valid': False,
                 'message': '新しいゲームを開始します'
             })
+
+        # Ensure session directory exists
+        os.makedirs('.flask_session', exist_ok=True)
             
         game_state = GameState.from_dict(session['game_state'])
         app.logger.debug(f"Processing move for card index: {card_index}")
@@ -98,6 +107,8 @@ def flip_card(card_index):
     except Exception as e:
         app.logger.error(f"Error processing flip: {str(e)}")
         # Create new game state if there's an error
+        session.clear()
+        session['id'] = os.urandom(16).hex()
         game_state = GameState()
         session['game_state'] = game_state.to_dict()
         session.modified = True
@@ -109,6 +120,8 @@ def flip_card(card_index):
 @app.route('/new-game', methods=['POST'])
 def new_game():
     try:
+        session.permanent = True
+        
         # Rate limiting check with proper error response
         if rate_limit():
             return jsonify({
@@ -116,13 +129,17 @@ def new_game():
                 'message': '操作が早すぎます。少し待ってから試してください。'
             }), 429
 
+        session.clear()
+        session['id'] = os.urandom(16).hex()
         game_state = GameState()
         session['game_state'] = game_state.to_dict()
         session.modified = True
+        
         app.logger.info("New game created successfully")
         return jsonify({'success': True})
     except Exception as e:
         app.logger.error(f"Error creating new game: {str(e)}")
+        session.clear()
         return jsonify({
             'success': False,
             'message': 'Failed to start new game'
