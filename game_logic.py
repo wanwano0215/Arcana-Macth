@@ -1,5 +1,5 @@
 import random
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 class GameState:
     def __init__(self):
@@ -68,27 +68,8 @@ class GameState:
         self.first_card = None
         return result
     
-    def cpu_play(self) -> Dict[str, Any]:
-        # First try to match known pairs
-        for i, value_i in self.cpu_memory.items():
-            for j, value_j in self.cpu_memory.items():
-                if i != j and value_i == value_j and not self.cards[i]['matched'] and not self.cards[j]['matched']:
-                    self.cards[i]['flipped'] = True
-                    self.cards[j]['flipped'] = True
-                    self.cards[i]['matched'] = True
-                    self.cards[j]['matched'] = True
-                    self.cpu_score += 1
-                    return {
-                        'cpu_moves': [
-                            {'index': int(i), 'value': int(value_i)},
-                            {'index': int(j), 'value': int(value_j)}
-                        ],
-                        'cpu_match': True,
-                        'cpu_score': self.cpu_score,
-                        'message': 'CPUがマッチを見つけました！'
-                    }
-        
-        # If no known pairs, try random cards
+    def _make_random_move(self) -> Tuple[List[int], bool]:
+        """Helper function to make a random move"""
         available = [i for i, card in enumerate(self.cards) if not card['matched']]
         if len(available) >= 2:
             moves = random.sample(available, 2)
@@ -96,31 +77,66 @@ class GameState:
                 self.cards[i]['flipped'] = True
                 self.cpu_memory[i] = self.cards[i]['value']
             
-            if self.cards[moves[0]]['value'] == self.cards[moves[1]]['value']:
+            is_match = self.cards[moves[0]]['value'] == self.cards[moves[1]]['value']
+            if is_match:
                 self.cards[moves[0]]['matched'] = True
                 self.cards[moves[1]]['matched'] = True
                 self.cpu_score += 1
-                return {
-                    'cpu_moves': [
-                        {'index': int(moves[0]), 'value': int(self.cards[moves[0]]['value'])},
-                        {'index': int(moves[1]), 'value': int(self.cards[moves[1]]['value'])}
-                    ],
-                    'cpu_match': True,
-                    'cpu_score': self.cpu_score,
-                    'message': 'CPUがマッチを見つけました！'
-                }
             else:
                 self.cards[moves[0]]['flipped'] = False
                 self.cards[moves[1]]['flipped'] = False
+            
+            return moves, is_match
+        return [], False
+
+    def cpu_play(self) -> Dict[str, Any]:
+        # 30% chance to make a mistake and play randomly even if we know pairs
+        if random.random() < 0.3:
+            # Skip the known pairs logic and go straight to random moves
+            moves, is_match = self._make_random_move()
+            if moves:
                 return {
                     'cpu_moves': [
                         {'index': int(moves[0]), 'value': int(self.cards[moves[0]]['value'])},
                         {'index': int(moves[1]), 'value': int(self.cards[moves[1]]['value'])}
                     ],
-                    'cpu_match': False,
+                    'cpu_match': is_match,
                     'cpu_score': self.cpu_score,
-                    'message': 'CPUはマッチを見つけられませんでした'
+                    'message': 'CPUがマッチを見つけました！' if is_match else 'CPUはマッチを見つけられませんでした'
                 }
+        else:
+            # Try to match known pairs
+            for i, value_i in self.cpu_memory.items():
+                for j, value_j in self.cpu_memory.items():
+                    if i != j and value_i == value_j and not self.cards[i]['matched'] and not self.cards[j]['matched']:
+                        self.cards[i]['flipped'] = True
+                        self.cards[j]['flipped'] = True
+                        self.cards[i]['matched'] = True
+                        self.cards[j]['matched'] = True
+                        self.cpu_score += 1
+                        return {
+                            'cpu_moves': [
+                                {'index': int(i), 'value': int(value_i)},
+                                {'index': int(j), 'value': int(value_j)}
+                            ],
+                            'cpu_match': True,
+                            'cpu_score': self.cpu_score,
+                            'message': 'CPUがマッチを見つけました！'
+                        }
+            
+            # If no known pairs, try random cards
+            moves, is_match = self._make_random_move()
+            if moves:
+                return {
+                    'cpu_moves': [
+                        {'index': int(moves[0]), 'value': int(self.cards[moves[0]]['value'])},
+                        {'index': int(moves[1]), 'value': int(self.cards[moves[1]]['value'])}
+                    ],
+                    'cpu_match': is_match,
+                    'cpu_score': self.cpu_score,
+                    'message': 'CPUがマッチを見つけました！' if is_match else 'CPUはマッチを見つけられませんでした'
+                }
+        
         return {'game_over': True, 'message': 'ゲーム終了！'}
     
     def to_dict(self) -> Dict[str, Any]:
