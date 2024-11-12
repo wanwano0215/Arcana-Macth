@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function() {
             cardGrid.appendChild(createCard(i));
         }
         firstCardFlipped = false;
-        statusMessage.textContent = '1枚目のカードを選んでください';
+        statusMessage.textContent = 'Choose your first card';
     }
 
     function flipCard(card, value) {
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function displayError(message) {
-        statusMessage.textContent = message || 'エラーが発生しました。もう一度お試しください。';
+        statusMessage.textContent = message || 'An error occurred. Please try again.';
         statusMessage.classList.remove('alert-info');
         statusMessage.classList.add('alert-danger');
         setTimeout(() => {
@@ -110,14 +110,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.game_over) {
                         statusMessage.textContent = data.message;
                     } else {
-                        statusMessage.textContent = '1枚目のカードを選んでください';
+                        statusMessage.textContent = 'Choose your first card';
                     }
                 }
             } else {
                 displayError(data.message);
             }
         } catch (error) {
-            console.error('Error:', error.message);
+            console.error('Error:', error.message || error.toString()); // Fixed error logging
             displayError();
         } finally {
             isProcessing = false;
@@ -144,12 +144,12 @@ document.addEventListener('DOMContentLoaded', function() {
             await response.json();
             initializeBoard();
             updateScore(0);
-            statusMessage.textContent = '1枚目のカードを選んでください';
+            statusMessage.textContent = 'Choose your first card';
             statusMessage.classList.remove('alert-danger');
             statusMessage.classList.add('alert-info');
         } catch (error) {
-            console.error('Error starting new game:', error.message);
-            displayError('新しいゲームの開始に失敗しました');
+            console.error('Error starting new game:', error.message || error.toString()); // Fixed error logging
+            displayError('Failed to start new game');
         }
     }
 

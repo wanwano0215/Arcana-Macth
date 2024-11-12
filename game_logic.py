@@ -20,7 +20,7 @@ class GameState:
         if self.cards[card_index]['matched'] or self.cards[card_index]['flipped']:
             return {
                 'valid': False,
-                'message': 'カードは既にめくられているか、マッチしています'
+                'message': 'Card is already flipped or matched'
             }
             
         self.cards[card_index]['flipped'] = True
@@ -32,7 +32,7 @@ class GameState:
                 'card_index': card_index,
                 'card_value': self.cards[card_index]['value'],
                 'turn_complete': False,
-                'message': '2枚目のカードを選んでください'
+                'message': 'Choose your second card'
             }
         
         # Second card
@@ -49,7 +49,7 @@ class GameState:
             'is_match': is_match,
             'turn_complete': True,
             'player_score': self.player_score,
-            'message': 'マッチ！' if is_match else 'マッチしませんでした'
+            'message': 'Match!' if is_match else 'No match!'
         }
         
         if is_match:
@@ -66,7 +66,7 @@ class GameState:
         # Check if game is over
         if all(card['matched'] for card in self.cards):
             result['game_over'] = True
-            result['message'] = f'ゲーム終了！ スコア: {self.player_score}'
+            result['message'] = f'Game Over! Score: {self.player_score}'
             
         return result
     
