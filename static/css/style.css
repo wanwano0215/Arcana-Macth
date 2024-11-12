@@ -12,7 +12,7 @@ body {
     grid-template-rows: repeat(4, 1fr);
     gap: 10px;
     margin: 0 auto;
-    max-width: 1400px;  /* Increased to accommodate wider layout */
+    max-width: 1400px;
     padding: 20px;
 }
 
@@ -20,12 +20,14 @@ body {
     aspect-ratio: 2/3;
     perspective: 1000px;
     cursor: pointer;
-    transition: transform 0.3s;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    transform-style: preserve-3d;
 }
 
 .memory-card.disabled {
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .memory-card.loading {
@@ -40,10 +42,10 @@ body {
     transform: translate(-50%, -50%);
     width: 30px;
     height: 30px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #3498db;
+    border: 3px solid rgba(74, 144, 226, 0.3);
+    border-top: 3px solid #4a90e2;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     z-index: 10;
 }
 
@@ -61,7 +63,7 @@ body {
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transition: transform 0.6s;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .memory-card.flipped .card-inner {
@@ -78,12 +80,14 @@ body {
     justify-content: center;
     font-size: 1.5em;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-front {
     background-color: #4a90e2;
     background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+    transform: rotateY(0deg);
 }
 
 .card-back {
@@ -97,20 +101,25 @@ body {
     background-color: #e8f5e9;
     border-color: #4caf50;
     box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
-    transition: box-shadow 0.3s ease;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .score-board {
     background-color: white;
     padding: 15px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.score-board:hover {
+    transform: translateY(-2px);
 }
 
 #status-message {
     font-size: 1.2em;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .alert-warning {
@@ -119,117 +128,99 @@ body {
     color: #856404;
 }
 
-/* Responsive design improvements */
-@media (max-width: 768px) {
-    .memory-card {
-        font-size: 0.8em;
-    }
-    
-    h1 {
-        font-size: 1.8rem;
-    }
-    
-    h3 {
-        font-size: 1.2rem;
-    }
-    
-    #status-message {
-        font-size: 1rem;
-    }
+/* Rate limit visual feedback */
+.rate-limited {
+    animation: shake 0.5s cubic-bezier(0.36, 0, 0.66, -0.56) both;
+    border-color: #dc3545 !important;
 }
 
-/* Animation improvements */
-.memory-card:hover {
-    transform: scale(1.02);
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
 }
 
-.memory-card.matched {
-    animation: matchPulse 0.6s ease-in-out;
-}
-
+/* Improved match animation */
 @keyframes matchPulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+    0% { 
+        transform: scale(1); 
+        box-shadow: 0 0 0 rgba(76, 175, 80, 0);
+    }
+    50% { 
+        transform: scale(1.05); 
+        box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+    }
+    100% { 
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(76, 175, 80, 0);
+    }
 }
 
-/* Match highlight animation */
-.match-highlight {
-    animation: matchPulse 0.8s ease-in-out;
-    color: #4caf50;
-    font-weight: bold;
-    font-size: 1.5em;
-    text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+.matched {
+    animation: matchPulse 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes matchPulse {
-    0% { transform: scale(1); opacity: 0.8; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(1); opacity: 0.8; }
-}
-
-.match-effect {
-    animation: matchGlow 1s ease-in-out;
-}
-
-@keyframes matchGlow {
-    0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.5); }
-    50% { box-shadow: 0 0 20px rgba(76, 175, 80, 0.8); }
-    100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.5); }
-}
-
-.matched .card-back {
-    background-color: #e8f5e9;
-    border-color: #4caf50;
-    transition: all 0.3s ease;
-}
-
-@keyframes gameClearPulse {
-    0% { transform: scale(1); opacity: 0.8; }
-    50% { transform: scale(1.5); opacity: 1; }
-    100% { transform: scale(1); opacity: 0.8; }
-}
-
+/* Game clear celebration */
 @keyframes celebrationBorder {
-    0% { box-shadow: 0 0 10px gold; }
-    50% { box-shadow: 0 0 30px gold, 0 0 50px gold; }
-    100% { box-shadow: 0 0 10px gold; }
+    0% { 
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 0 50px rgba(255, 215, 0, 0.4);
+        transform: scale(1.02);
+    }
+    100% { 
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        transform: scale(1);
+    }
 }
 
 .game-clear {
-    animation: gameClearPulse 1.5s ease-in-out infinite;
+    animation: gameOverPulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
     color: #ffd700;
-    font-size: 2em;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
-.celebration {
-    animation: celebrationBorder 2s ease-in-out infinite;
+@keyframes gameOverPulse {
+    0%, 100% { 
+        transform: scale(1);
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+    50% { 
+        transform: scale(1.1);
+        text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    }
 }
 
+/* Responsive design */
+@media (max-width: 768px) {
+    .card-grid {
+        grid-template-columns: repeat(6, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        gap: 8px;
+        padding: 10px;
+    }
+}
+
+/* Button improvements */
 .btn-primary {
     background-color: #4a90e2;
     border-color: #4a90e2;
     padding: 0.5rem 1.5rem;
     font-weight: 500;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
 }
 
 .btn-primary:hover {
     background-color: #357abd;
     border-color: #357abd;
     transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
 }
 
-.alert {
-    border-radius: 8px;
-    font-weight: 500;
-}
-
-/* Prevent text selection on cards */
-.memory-card {
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(74, 144, 226, 0.2);
 }

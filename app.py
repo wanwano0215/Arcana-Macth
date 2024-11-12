@@ -57,7 +57,9 @@ def recover_session():
 
 # Rate limiting
 request_times = {}
-RATE_LIMIT = 0.8  # Increased from 0.5 to 0.8 seconds for smoother gameplay
+RATE_LIMIT = 0.3  # Reduced from 0.8 to 0.3 seconds for smoother gameplay
+BURST_LIMIT = 3   # Allow burst of 3 requests
+BURST_WINDOW = 2  # Within 2 seconds
 CLEANUP_INTERVAL = 60  # Cleanup every minute
 
 def cleanup_request_times():
@@ -65,10 +67,11 @@ def cleanup_request_times():
     global request_times
     current_time = datetime.now()
     cutoff_time = current_time - timedelta(seconds=CLEANUP_INTERVAL)
-    request_times = {k: v for k, v in request_times.items() if v >= cutoff_time}
+    request_times = {k: {'times': [t for t in v['times'] if t >= cutoff_time]} 
+                    for k, v in request_times.items() if v['times']}
 
 def rate_limit():
-    """Rate limiting with improved cleanup and logging"""
+    """Rate limiting with burst allowance"""
     cleanup_request_times()
     current_time = datetime.now()
     session_key = str(session.get('id', os.urandom(16).hex()))
@@ -77,15 +80,23 @@ def rate_limit():
         session['id'] = session_key
         session.modified = True
     
-    last_request_time = request_times.get(session_key)
+    if session_key not in request_times:
+        request_times[session_key] = {'times': []}
     
-    if last_request_time:
-        time_since_last = (current_time - last_request_time).total_seconds()
-        if time_since_last < RATE_LIMIT:
-            logger.warning(f'Rate limit exceeded: {time_since_last:.2f}s since last request')
-            return True
+    # Get recent requests within burst window
+    recent_requests = [t for t in request_times[session_key]['times'] 
+                      if (current_time - t).total_seconds() <= BURST_WINDOW]
     
-    request_times[session_key] = current_time
+    if recent_requests:
+        # Check if within burst limit
+        if len(recent_requests) >= BURST_LIMIT:
+            # Check time since oldest request in burst
+            time_since_last = (current_time - recent_requests[-1]).total_seconds()
+            if time_since_last < RATE_LIMIT:
+                logger.warning(f'Rate limit exceeded: {time_since_last:.2f}s since last request')
+                return True
+    
+    request_times[session_key]['times'].append(current_time)
     return False
 
 @app.route('/')
