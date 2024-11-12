@@ -46,8 +46,7 @@ class GameState:
                 'card_index': card_index,
                 'card_value': self.cards[card_index]['value'],
                 'turn_complete': False,
-                'message': 'カードを2枚めくってください',
-                'player_score': self.player_score  # Include current score
+                'message': 'カードを2枚めくってください'
             }
         
         # Second card
@@ -68,9 +67,12 @@ class GameState:
             'card_value': second_card_value,
             'is_match': is_match,
             'turn_complete': True,
-            'player_score': self.player_score,  # Updated score included here
             'message': '🎉 Match! 🎉' if is_match else 'No match!'
         }
+        
+        # Only include player_score in the response when there's a match
+        if is_match:
+            result['player_score'] = self.player_score
         
         if not is_match:
             # Reset cards after delay (handled by frontend)

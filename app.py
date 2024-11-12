@@ -3,6 +3,7 @@ from flask import Flask, render_template, jsonify, session, send_from_directory
 from flask_cors import CORS
 from flask_session import Session
 from game_logic import GameState
+import time
 
 # Initialize Flask app with explicit static folder
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -16,6 +17,18 @@ app.config['SESSION_PERMANENT'] = False
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # 30 minutes
 app.config['SESSION_USE_SIGNER'] = True
 Session(app)
+
+# Rate limiting
+request_times = {}
+RATE_LIMIT = 0.1  # Minimum time between requests in seconds
+
+def rate_limit():
+    current_time = time.time()
+    last_request_time = request_times.get(session.id, 0)
+    if current_time - last_request_time < RATE_LIMIT:
+        return True
+    request_times[session.id] = current_time
+    return False
 
 @app.route('/')
 def index():
@@ -34,6 +47,13 @@ def index():
 @app.route('/flip/<int:card_index>', methods=['POST'])
 def flip_card(card_index):
     try:
+        # Rate limiting check
+        if rate_limit():
+            return jsonify({
+                'valid': False,
+                'message': '操作が早すぎます。少し待ってから試してください。'
+            }), 429
+
         # Ensure session directory exists
         os.makedirs('.flask_session', exist_ok=True)
         
@@ -71,6 +91,13 @@ def flip_card(card_index):
 @app.route('/new-game', methods=['POST'])
 def new_game():
     try:
+        # Rate limiting check
+        if rate_limit():
+            return jsonify({
+                'success': False,
+                'message': '操作が早すぎます。少し待ってから試してください。'
+            }), 429
+
         game_state = GameState()
         session['game_state'] = game_state.to_dict()
         session.modified = True

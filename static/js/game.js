@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let isProcessing = false;
     let firstCardFlipped = false;
+    const MAX_RETRIES = 3;
     
     function createCard(index) {
         const card = document.createElement('div');
@@ -61,6 +62,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 
+    async function makeRequestWithRetry(url, options, retries = MAX_RETRIES) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (response.ok) {
+                    return await response.json();
+                }
+                if (response.status === 503) {
+                    // Wait before retrying (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                    continue;
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            } catch (error) {
+                if (i === retries - 1) throw error;
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+            }
+        }
+        throw new Error('Max retries reached');
+    }
+
     async function handleCardClick(event) {
         if (isProcessing) {
             return;
@@ -74,29 +97,21 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Add processing class during server communication
         card.classList.add('processing');
         isProcessing = true;
         const cardIndex = parseInt(card.dataset.index);
 
         try {
-            const response = await fetch(`/flip/${cardIndex}`, {
+            const data = await makeRequestWithRetry(`/flip/${cardIndex}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
             if (data.valid) {
                 flipCard(card, data.card_value);
                 statusMessage.textContent = data.message;
-                updateScore(data.player_score); // Update score on every valid move
 
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
@@ -111,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
                         markAsMatched(card);
                         markAsMatched(firstCard);
-                        updateScore(data.player_score);  // Update score after match
+                        updateScore(data.player_score);  // Only update score on match
                         statusMessage.classList.add('match-highlight');
                         setTimeout(() => {
                             statusMessage.classList.remove('match-highlight');
@@ -135,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             const errorMessage = error.message || 'Unknown error occurred';
             console.error('Error:', errorMessage);
-            displayError('通信エラーが発生しました: ' + errorMessage);
+            displayError('通信エラーが発生しました。もう一度お試しください。');
             unflipCard(card);
         } finally {
             isProcessing = false;
@@ -145,18 +160,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function startNewGame() {
         try {
-            const response = await fetch('/new-game', {
+            await makeRequestWithRetry('/new-game', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            await response.json();
+            
             initializeBoard();
             updateScore(0);
             statusMessage.textContent = 'カードを2枚めくってください';
@@ -165,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             const errorMessage = error.message || 'Unknown error occurred';
             console.error('Error starting new game:', errorMessage);
-            displayError('新しいゲームを開始できませんでした: ' + errorMessage);
+            displayError('新しいゲームを開始できませんでした。もう一度お試しください。');
         }
     }
 
