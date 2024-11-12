@@ -9,13 +9,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function createCard(index) {
         const card = document.createElement('div');
-        card.className = 'col-3 col-sm-2 col-md-1';
+        card.className = 'memory-card';
+        card.setAttribute('data-index', index);
         card.innerHTML = `
-            <div class="memory-card" data-index="${index}">
-                <div class="card-inner">
-                    <div class="card-front"></div>
-                    <div class="card-back"></div>
-                </div>
+            <div class="card-inner">
+                <div class="card-front"></div>
+                <div class="card-back"></div>
             </div>
         `;
         return card;
@@ -118,8 +117,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 displayError(data.message);
             }
         } catch (error) {
-            console.error('Error:', error.message || error.toString());
-            displayError('通信エラーが発生しました');
+            // Improved error logging with proper error message extraction
+            const errorMessage = error.message || 'Unknown error occurred';
+            console.error('Error:', errorMessage);
+            displayError('通信エラーが発生しました: ' + errorMessage);
         } finally {
             isProcessing = false;
         }
@@ -149,8 +150,10 @@ document.addEventListener('DOMContentLoaded', function() {
             statusMessage.classList.remove('alert-danger');
             statusMessage.classList.add('alert-info');
         } catch (error) {
-            console.error('Error starting new game:', error.message || error.toString());
-            displayError('新しいゲームを開始できませんでした');
+            // Improved error logging with proper error message extraction
+            const errorMessage = error.message || 'Unknown error occurred';
+            console.error('Error starting new game:', errorMessage);
+            displayError('新しいゲームを開始できませんでした: ' + errorMessage);
         }
     }
 
