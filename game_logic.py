@@ -14,14 +14,28 @@ class GameState:
         return [{'value': v, 'flipped': False, 'matched': False} for v in values]
     
     def process_player_move(self, card_index: int) -> Dict[str, Any]:
-        # Ensure card_index is integer
-        card_index = int(card_index)
-        
-        # Validate game state
-        if not 0 <= card_index < len(self.cards):
+        try:
+            card_index = int(card_index)
+            if not 0 <= card_index < len(self.cards):
+                return {
+                    'valid': False,
+                    'message': '無効なカードです'
+                }
+            # Add state validation
+            if self.cards[card_index]['matched']:
+                return {
+                    'valid': False,
+                    'message': 'このカードは既にマッチしています'
+                }
+            if self.cards[card_index]['flipped']:
+                return {
+                    'valid': False,
+                    'message': 'このカードは既にめくられています'
+                }
+        except ValueError:
             return {
                 'valid': False,
-                'message': '無効なカードです'
+                'message': '無効なカード番号です'
             }
             
         # Add explicit state check
@@ -31,12 +45,6 @@ class GameState:
                 'message': '同じカードは選択できません'
             }
         
-        if self.cards[card_index]['matched'] or self.cards[card_index]['flipped']:
-            return {
-                'valid': False,
-                'message': 'Card is already flipped or matched'
-            }
-            
         self.cards[card_index]['flipped'] = True
         
         if self.first_card is None:

@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="card-front"></div>
                 <div class="card-back"></div>
             </div>
+            <div class="loading-spinner"></div>
         `;
         return card;
     }
@@ -28,6 +29,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         firstCardFlipped = false;
         statusMessage.textContent = 'カードを2枚めくってください';
+        statusMessage.classList.remove('alert-danger', 'alert-warning');
+        statusMessage.classList.add('alert-info');
     }
 
     function flipCard(card, value) {
@@ -51,12 +54,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function displayError(message) {
-        statusMessage.textContent = message || 'エラーが発生しました。もう一度お試しください。';
-        statusMessage.classList.remove('alert-info');
-        statusMessage.classList.add('alert-danger');
+    function showLoadingState(card, show) {
+        if (show) {
+            card.classList.add('loading');
+        } else {
+            card.classList.remove('loading');
+        }
+    }
+
+    function displayError(message, isRateLimit = false) {
+        statusMessage.textContent = message || 'エラーが発生しました。少々お待ちください。';
+        // Add visual feedback
+        statusMessage.classList.add(isRateLimit ? 'alert-warning' : 'alert-danger');
         setTimeout(() => {
-            statusMessage.classList.remove('alert-danger');
+            statusMessage.classList.remove('alert-danger', 'alert-warning');
             statusMessage.classList.add('alert-info');
             statusMessage.textContent = 'カードを2枚めくってください';
         }, 3000);
@@ -70,15 +81,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     return await response.json();
                 }
                 if (response.status === 503) {
-                    // Wait before retrying (exponential backoff)
-                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                    const delay = Math.min(1000 * Math.pow(2, i), 5000);
+                    console.warn(`Server busy (503), retrying in ${delay}ms...`);
+                    statusMessage.textContent = '通信中です。少々お待ちください...';
+                    await new Promise(resolve => setTimeout(resolve, delay));
                     continue;
+                }
+                if (response.status === 429) {
+                    const data = await response.json();
+                    displayError(data.message, true);
+                    throw new Error('Rate limit exceeded');
                 }
                 throw new Error(`HTTP error! status: ${response.status}`);
             } catch (error) {
+                console.warn(`Attempt ${i + 1} failed:`, error.message);
                 if (i === retries - 1) throw error;
-                // Wait before retrying
-                await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                const delay = Math.min(1000 * Math.pow(2, i), 5000);
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
         }
         throw new Error('Max retries reached');
@@ -99,6 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         card.classList.add('processing');
         isProcessing = true;
+        showLoadingState(card, true);
         const cardIndex = parseInt(card.dataset.index);
 
         try {
@@ -126,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
                         markAsMatched(card);
                         markAsMatched(firstCard);
-                        updateScore(data.player_score);  // Only update score on match
+                        updateScore(data.player_score);
                         statusMessage.classList.add('match-highlight');
                         setTimeout(() => {
                             statusMessage.classList.remove('match-highlight');
@@ -148,18 +168,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 displayError(data.message);
             }
         } catch (error) {
-            const errorMessage = error.message || 'Unknown error occurred';
-            console.error('Error:', errorMessage);
+            console.error('Error:', error.message);
             displayError('通信エラーが発生しました。もう一度お試しください。');
             unflipCard(card);
         } finally {
             isProcessing = false;
             card.classList.remove('processing');
+            showLoadingState(card, false);
         }
     }
 
     async function startNewGame() {
         try {
+            statusMessage.textContent = '新しいゲームを開始中...';
             await makeRequestWithRetry('/new-game', {
                 method: 'POST',
                 headers: {
@@ -170,11 +191,10 @@ document.addEventListener('DOMContentLoaded', function() {
             initializeBoard();
             updateScore(0);
             statusMessage.textContent = 'カードを2枚めくってください';
-            statusMessage.classList.remove('alert-danger');
+            statusMessage.classList.remove('alert-danger', 'alert-warning');
             statusMessage.classList.add('alert-info');
         } catch (error) {
-            const errorMessage = error.message || 'Unknown error occurred';
-            console.error('Error starting new game:', errorMessage);
+            console.error('Error starting new game:', error.message);
             displayError('新しいゲームを開始できませんでした。もう一度お試しください。');
         }
     }
