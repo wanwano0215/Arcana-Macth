@@ -3,7 +3,7 @@ from flask import Flask, render_template, jsonify, session, send_from_directory
 from flask_cors import CORS
 from flask_session import Session
 from game_logic import GameState
-import time
+from datetime import datetime, timedelta
 
 # Initialize Flask app with explicit static folder
 app = Flask(__name__, static_folder='static', static_url_path='/static')
@@ -21,13 +21,31 @@ Session(app)
 # Rate limiting
 request_times = {}
 RATE_LIMIT = 0.1  # Minimum time between requests in seconds
+CLEANUP_INTERVAL = 300  # Clean up every 5 minutes
+last_cleanup = datetime.now()
+
+def cleanup_request_times():
+    """Clean up old rate limiting entries"""
+    global last_cleanup
+    current_time = datetime.now()
+    if (current_time - last_cleanup).total_seconds() > CLEANUP_INTERVAL:
+        cutoff_time = current_time - timedelta(seconds=CLEANUP_INTERVAL)
+        for key in list(request_times.keys()):
+            if request_times[key] < cutoff_time:
+                del request_times[key]
+        last_cleanup = current_time
 
 def rate_limit():
-    current_time = time.time()
-    last_request_time = request_times.get(session.id, 0)
-    if current_time - last_request_time < RATE_LIMIT:
+    """Rate limiting with session key"""
+    cleanup_request_times()
+    current_time = datetime.now()
+    session_key = str(id(session))
+    last_request_time = request_times.get(session_key)
+    
+    if last_request_time and (current_time - last_request_time) < timedelta(seconds=RATE_LIMIT):
         return True
-    request_times[session.id] = current_time
+        
+    request_times[session_key] = current_time
     return False
 
 @app.route('/')
@@ -47,7 +65,7 @@ def index():
 @app.route('/flip/<int:card_index>', methods=['POST'])
 def flip_card(card_index):
     try:
-        # Rate limiting check
+        # Rate limiting check with proper error response
         if rate_limit():
             return jsonify({
                 'valid': False,
@@ -91,7 +109,7 @@ def flip_card(card_index):
 @app.route('/new-game', methods=['POST'])
 def new_game():
     try:
-        # Rate limiting check
+        # Rate limiting check with proper error response
         if rate_limit():
             return jsonify({
                 'success': False,
