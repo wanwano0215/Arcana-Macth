@@ -49,7 +49,7 @@ class GameState:
             'is_match': is_match,
             'turn_complete': True,
             'player_score': self.player_score,
-            'message': 'Match!' if is_match else 'No match!'
+            'message': '🎉 Match! 🎉' if is_match else 'No match!'
         }
         
         if is_match:

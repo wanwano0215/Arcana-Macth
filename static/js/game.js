@@ -100,6 +100,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         markAsMatched(card);
                         markAsMatched(firstCard);
                         updateScore(data.player_score);
+                        statusMessage.classList.add('match-highlight');
+                        setTimeout(() => {
+                            statusMessage.classList.remove('match-highlight');
+                        }, 1500);
                     } else {
                         const firstCard = document.querySelector(`.memory-card[data-index="${data.first_card}"]`);
                         await new Promise(resolve => setTimeout(resolve, 500));
