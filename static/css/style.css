@@ -11,9 +11,9 @@ body {
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(11, 1fr);  /* 11列 */
-    grid-template-rows: repeat(4, 1fr);      /* 4行 */
-    gap: 10px;
+    grid-template-columns: repeat(11, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 12px;
     margin: 0 auto;
     max-width: 1400px;
     padding: 15px;
@@ -24,7 +24,7 @@ body {
 .memory-card {
     aspect-ratio: 0.57;  /* 1170:2048の比率を維持 */
     width: 100%;
-    max-width: 90px;     /* カードサイズを小さく調整 */
+    max-width: 120px;    /* カードサイズを大きく */
     margin: 0 auto;
     perspective: 1000px;
     cursor: pointer;
@@ -87,7 +87,7 @@ body {
 .card-img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;   /* containからcoverに変更 */
     border-radius: 8px;
     pointer-events: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -173,7 +173,7 @@ body {
     }
     
     .memory-card {
-        max-width: 70px;  /* モバイルでのカードサイズをさらに小さく */
+        max-width: 90px;  /* モバイルでのサイズも調整 */
     }
 }
 
