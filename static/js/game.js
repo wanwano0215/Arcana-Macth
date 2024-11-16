@@ -9,8 +9,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const MAX_RETRIES = 3;
     let lastClickTime = 0;
     const MIN_CLICK_INTERVAL = 200;
-    const FLIP_ANIMATION_DURATION = 400;
-    const MATCH_DISPLAY_DURATION = 800;
+    const FLIP_ANIMATION_DURATION = 600; // Increased for smoother animation
+    const MATCH_DISPLAY_DURATION = 1000;
+    
+    // Initialize fabric canvas for each card
+    const cardCanvases = new Map();
     
     // Map card values to their corresponding image names
     const cardImageMap = {
@@ -36,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         19: '19太陽',
         20: '20審判',
         21: '21世界',
-        22: '6-1恋人'  // Special case for alternate version
+        22: '6-1恋人'
     };
 
     let preloadedImages = {};
@@ -49,7 +52,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                     preloadedImages[imageName] = img;
                     resolve(img);
                 };
-                img.onerror = reject;
+                img.onerror = () => {
+                    console.error(`Failed to load image: ${imageName}`);
+                    reject(new Error(`Failed to load image: ${imageName}`));
+                };
                 img.src = `/static/images/${imageName}.png`;
             });
         });
@@ -61,20 +67,47 @@ document.addEventListener('DOMContentLoaded', async function() {
                 preloadedImages['カード裏面'] = img;
                 resolve(img);
             };
-            img.onerror = reject;
+            img.onerror = () => {
+                console.error('Failed to load card back image');
+                reject(new Error('Failed to load card back image'));
+            };
             img.src = '/static/images/カード裏面.png';
         }));
         
-        await Promise.all(imagePromises);
-        console.log('Images preloaded and cached');
-        return preloadedImages;
+        try {
+            await Promise.all(imagePromises);
+            console.log('Images preloaded and cached');
+            return preloadedImages;
+        } catch (error) {
+            console.error('Error preloading images:', error);
+            throw error;
+        }
     };
+
+    function createCardCanvas(card) {
+        const canvas = new fabric.Canvas(card.querySelector('canvas'), {
+            width: card.offsetWidth,
+            height: card.offsetHeight,
+            selection: false,
+            renderOnAddRemove: true,
+        });
+        
+        // Initialize with card back
+        fabric.Image.fromURL('/static/images/カード裏面.png', img => {
+            img.scaleToWidth(canvas.width);
+            canvas.add(img);
+            canvas.renderAll();
+        });
+        
+        return canvas;
+    }
     
     function createCard(index) {
         const card = document.createElement('div');
         card.className = 'memory-card';
         card.setAttribute('data-index', index);
         card.innerHTML = `
+            <canvas class="card-canvas"></canvas>
             <div class="card-inner">
                 <div class="card-front">
                     <img src="/static/images/カード裏面.png" alt="card back" class="card-img">
@@ -84,23 +117,82 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </div>
             </div>
         `;
+        
+        // Initialize Fabric.js canvas for this card
+        const canvas = createCardCanvas(card);
+        cardCanvases.set(index, canvas);
+        
         return card;
     }
 
-    function flipCard(card, value) {
-        card.classList.add('flipped');
-        const cardImage = card.querySelector('.card-back .card-img');
-        const imageName = cardImageMap[value] || `${value}愚者`;
-        // Set the image before the flip animation starts
-        cardImage.src = preloadedImages[imageName].src;
+    function animateFlip(card, value, duration = FLIP_ANIMATION_DURATION) {
+        return new Promise(resolve => {
+            const canvas = cardCanvases.get(parseInt(card.dataset.index));
+            const imageName = cardImageMap[value] || `${value}愚者`;
+            
+            // Create flip animation
+            fabric.Image.fromURL(`/static/images/${imageName}.png`, img => {
+                img.scaleToWidth(canvas.width);
+                
+                // First half of flip
+                fabric.util.animate({
+                    startValue: 0,
+                    endValue: -90,
+                    duration: duration / 2,
+                    onChange: (value) => {
+                        canvas.clear();
+                        canvas.add(img);
+                        img.set('skewY', value);
+                        canvas.renderAll();
+                    },
+                    onComplete: () => {
+                        // Second half of flip
+                        fabric.util.animate({
+                            startValue: 90,
+                            endValue: 0,
+                            duration: duration / 2,
+                            onChange: (value) => {
+                                canvas.clear();
+                                canvas.add(img);
+                                img.set('skewY', value);
+                                canvas.renderAll();
+                            },
+                            onComplete: resolve
+                        });
+                    }
+                });
+            });
+        });
     }
 
-    function unflipCard(card) {
+    async function flipCard(card, value) {
+        card.classList.add('flipped');
+        await animateFlip(card, value);
+    }
+
+    async function unflipCard(card) {
         card.classList.remove('flipped');
+        const canvas = cardCanvases.get(parseInt(card.dataset.index));
+        
+        // Animate back to card back
+        await new Promise(resolve => {
+            fabric.Image.fromURL('/static/images/カード裏面.png', img => {
+                img.scaleToWidth(canvas.width);
+                canvas.clear();
+                canvas.add(img);
+                canvas.renderAll();
+                resolve();
+            });
+        });
     }
 
     function markAsMatched(card) {
         card.classList.add('matched');
+        const canvas = cardCanvases.get(parseInt(card.dataset.index));
+        
+        // Add glow effect to matched cards
+        canvas.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+        canvas.renderAll();
     }
 
     function updateScore(score) {
@@ -193,16 +285,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
 
             if (data.valid) {
-                flipCard(card, data.card_value);
+                await flipCard(card, data.card_value);
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
                     statusMessage.textContent = data.message;
+                    isProcessing = false;
                     return;
                 }
 
                 firstCardFlipped = false;
-                await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
-
                 if (data.turn_complete) {
                     if (data.is_match) {
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
@@ -211,10 +302,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                         updateScore(data.player_score);
                         statusMessage.textContent = '🎉 Match! 🎉';
                     } else {
+                        await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
-                        await new Promise(resolve => setTimeout(resolve, FLIP_ANIMATION_DURATION));
-                        unflipCard(card);
-                        unflipCard(firstCard);
+                        await Promise.all([
+                            unflipCard(card),
+                            unflipCard(firstCard)
+                        ]);
                         statusMessage.textContent = 'カードを2枚めくってください';
                     }
 
