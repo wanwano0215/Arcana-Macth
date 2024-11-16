@@ -13,16 +13,18 @@ body {
     display: grid;
     grid-template-columns: repeat(11, 1fr);
     grid-template-rows: repeat(4, 1fr);
-    gap: 10px;
+    gap: 12px;
     margin: 0 auto;
     max-width: 1400px;
     padding: 15px;
+    justify-items: center;
+    align-items: center;
 }
 
 .memory-card {
-    aspect-ratio: 0.57;  /* Match 1170:2048 ratio */
+    aspect-ratio: 0.57;  /* Maintain 1170:2048 ratio */
     width: 100%;
-    max-width: 140px;
+    max-width: 110px;    /* Reduce from 140px for better fit */
     margin: 0 auto;
     perspective: 1000px;
     cursor: pointer;
@@ -161,16 +163,17 @@ body {
     }
 }
 
+/* Update mobile layout */
 @media (max-width: 768px) {
     .card-grid {
-        grid-template-columns: repeat(5, 1fr);
-        grid-template-rows: repeat(9, 1fr);
+        grid-template-columns: repeat(6, 1fr);
+        grid-template-rows: repeat(8, 1fr);
         gap: 8px;
         padding: 10px;
     }
     
     .memory-card {
-        max-width: 90px;
+        max-width: 80px;
     }
 }
 
