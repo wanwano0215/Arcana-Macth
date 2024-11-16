@@ -1,4 +1,5 @@
 import os
+import random
 from flask import Flask, render_template, jsonify, session, send_from_directory, request
 from flask_cors import CORS
 from flask_session import Session
@@ -57,9 +58,9 @@ def recover_session():
 
 # Rate limiting
 request_times = {}
-RATE_LIMIT = 0.3  # Reduced from 0.8 to 0.3 seconds for smoother gameplay
-BURST_LIMIT = 3   # Allow burst of 3 requests
-BURST_WINDOW = 2  # Within 2 seconds
+RATE_LIMIT = 0.2  # Reduced from 0.3 to 0.2 seconds
+BURST_LIMIT = 5   # Increased from 4 to 5 requests
+BURST_WINDOW = 2  # Within 2 seconds window
 CLEANUP_INTERVAL = 60  # Cleanup every minute
 
 def cleanup_request_times():
@@ -70,8 +71,16 @@ def cleanup_request_times():
     request_times = {k: {'times': [t for t in v['times'] if t >= cutoff_time]} 
                     for k, v in request_times.items() if v['times']}
 
+def calculate_backoff(attempts):
+    """Calculate exponential backoff time"""
+    base_delay = 0.2  # Start with 200ms
+    max_delay = 1.0   # Cap at 1 second
+    backoff = min(base_delay * (1.2 ** attempts), max_delay)
+    jitter = backoff * 0.1  # 10% jitter
+    return backoff + (random.random() * jitter)
+
 def rate_limit():
-    """Rate limiting with burst allowance"""
+    """Rate limiting with burst allowance and exponential backoff"""
     cleanup_request_times()
     current_time = datetime.now()
     session_key = str(session.get('id', os.urandom(16).hex()))
@@ -81,7 +90,7 @@ def rate_limit():
         session.modified = True
     
     if session_key not in request_times:
-        request_times[session_key] = {'times': []}
+        request_times[session_key] = {'times': [], 'attempts': 0}
     
     # Get recent requests within burst window
     recent_requests = [t for t in request_times[session_key]['times'] 
@@ -93,11 +102,16 @@ def rate_limit():
             # Check time since oldest request in burst
             time_since_last = (current_time - recent_requests[-1]).total_seconds()
             if time_since_last < RATE_LIMIT:
-                logger.warning(f'Rate limit exceeded: {time_since_last:.2f}s since last request')
-                return True
+                # Increment attempts for exponential backoff
+                request_times[session_key]['attempts'] += 1
+                backoff_time = calculate_backoff(request_times[session_key]['attempts'])
+                logger.warning(f'Rate limit exceeded: {time_since_last:.2f}s since last request, backing off for {backoff_time:.2f}s')
+                return True, backoff_time
     
+    # Reset attempts on successful request
+    request_times[session_key]['attempts'] = 0
     request_times[session_key]['times'].append(current_time)
-    return False
+    return False, 0
 
 @app.route('/')
 def index():
@@ -114,10 +128,12 @@ def index():
 @app.route('/flip/<int:card_index>', methods=['POST'])
 def flip_card(card_index):
     try:
-        if rate_limit():
+        is_rate_limited, backoff_time = rate_limit()
+        if is_rate_limited:
             return jsonify({
                 'valid': False,
-                'message': '操作が早すぎます。少し待ってから試してください。'
+                'message': '操作が早すぎます。少し待ってから試してください。',
+                'backoff': backoff_time
             }), 429
 
         if not recover_session():
@@ -139,10 +155,12 @@ def flip_card(card_index):
 @app.route('/new-game', methods=['POST'])
 def new_game():
     try:
-        if rate_limit():
+        is_rate_limited, backoff_time = rate_limit()
+        if is_rate_limited:
             return jsonify({
                 'success': False,
-                'message': '操作が早すぎます。少し待ってから試してください。'
+                'message': '操作が早すぎます。少し待ってから試してください。',
+                'backoff': backoff_time
             }), 429
 
         game_state = GameState()

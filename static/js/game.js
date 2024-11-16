@@ -8,7 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let firstCardFlipped = false;
     const MAX_RETRIES = 3;
     let lastClickTime = 0;
-    const MIN_CLICK_INTERVAL = 300; // Minimum time between clicks in ms
+    const MIN_CLICK_INTERVAL = 200;  // Reduced from 300ms to 200ms
+    const FLIP_ANIMATION_DURATION = 400; // ms
+    const MATCH_DISPLAY_DURATION = 800; // ms
     
     function createCard(index) {
         const card = document.createElement('div');
@@ -16,8 +18,12 @@ document.addEventListener('DOMContentLoaded', function() {
         card.setAttribute('data-index', index);
         card.innerHTML = `
             <div class="card-inner">
-                <div class="card-front"></div>
-                <div class="card-back"></div>
+                <div class="card-front">
+                    <img src="/static/images/card-back.png" alt="card back">
+                </div>
+                <div class="card-back">
+                    <img class="card-image" alt="card">
+                </div>
             </div>
             <div class="loading-spinner"></div>
         `;
@@ -26,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function initializeBoard() {
         cardGrid.innerHTML = '';
-        for (let i = 0; i < 44; i++) {
+        for (let i = 0; i < 26; i++) {  // 13 pairs = 26 cards
             cardGrid.appendChild(createCard(i));
         }
         firstCardFlipped = false;
@@ -41,26 +47,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function flipCard(card, value) {
         card.classList.add('flipped');
-        const cardBack = card.querySelector('.card-back');
-        cardBack.textContent = value;
-        
-        // Add subtle transform effect
-        card.style.transform = 'scale(1.02)';
-        setTimeout(() => {
-            card.style.transform = 'scale(1)';
-        }, 300);
+        const cardImage = card.querySelector('.card-back .card-image');
+        // Preload image before showing
+        const img = new Image();
+        img.onload = () => {
+            cardImage.src = `/static/images/${value}.png`;
+            card.style.transform = 'scale(1.02)';
+            setTimeout(() => {
+                card.style.transform = 'scale(1)';
+            }, FLIP_ANIMATION_DURATION / 2);
+        };
+        img.src = `/static/images/${value}.png`;
     }
 
     function unflipCard(card) {
         card.classList.remove('flipped');
-        // Add smooth transition for unflip
-        card.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+        const cardImage = card.querySelector('.card-back .card-image');
+        cardImage.src = '';
+        card.style.transition = `transform ${FLIP_ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
     }
 
     function markAsMatched(card) {
         card.classList.add('matched');
-        // Add match celebration effect
-        card.style.animation = 'matchPulse 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+        card.style.animation = `matchPulse ${MATCH_DISPLAY_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
     }
 
     function updateScore(score) {
@@ -72,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 playerScoreElement.classList.add('match-highlight');
                 setTimeout(() => {
                     playerScoreElement.classList.remove('match-highlight');
-                }, 1000);
+                }, MATCH_DISPLAY_DURATION);
             }
         }
     }
@@ -85,26 +94,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function handleRateLimitError(card, message) {
+    function handleRateLimitError(card, message, backoffTime = 1.0) {
         card.classList.add('rate-limited');
-        const originalBackground = statusMessage.style.background;
-        
-        statusMessage.textContent = message || '少々お待ちください...';
+        statusMessage.textContent = `${message} (${backoffTime.toFixed(1)}秒後に再試行可能)`;
         statusMessage.classList.add('alert-warning');
         
-        // Remove rate-limited class after animation
         setTimeout(() => {
             card.classList.remove('rate-limited');
             statusMessage.classList.remove('alert-warning');
             statusMessage.classList.add('alert-info');
             statusMessage.textContent = 'カードを2枚めくってください';
-        }, 1000);
+        }, backoffTime * 1000);
     }
 
     async function makeRequestWithRetry(url, options, retries = MAX_RETRIES) {
-        let delay = 300;
+        let attempt = 1;
+        let delay = 200; // Start with 200ms instead of 500ms
         
-        for (let i = 0; i < retries; i++) {
+        while (attempt <= retries) {
             try {
                 const response = await fetch(url, options);
                 if (response.ok) {
@@ -113,9 +120,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (response.status === 429) {
                     const data = await response.json();
-                    if (i < retries - 1) {
-                        await new Promise(resolve => setTimeout(resolve, delay + Math.random() * 100));
-                        delay *= 1.5; // Gentler backoff
+                    if (attempt < retries) {
+                        const backoffTime = data.backoff || delay / 1000;
+                        await new Promise(resolve => setTimeout(resolve, backoffTime * 1000));
+                        delay *= 1.2; // Gentler backoff (1.2 instead of 1.5)
+                        attempt++;
                         continue;
                     }
                     throw new Error('Rate limit exceeded');
@@ -123,9 +132,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 throw new Error(`HTTP error! status: ${response.status}`);
             } catch (error) {
-                if (i === retries - 1) throw error;
+                if (attempt === retries) throw error;
                 await new Promise(resolve => setTimeout(resolve, delay));
-                delay *= 1.5;
+                delay *= 1.2;
+                attempt++;
             }
         }
         throw new Error('Max retries reached');
@@ -134,7 +144,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleCardClick(event) {
         const currentTime = Date.now();
         if (currentTime - lastClickTime < MIN_CLICK_INTERVAL) {
-            handleRateLimitError(event.target.closest('.memory-card'), '操作が早すぎます');
+            handleRateLimitError(event.target.closest('.memory-card'), '操作が早すぎます', 0.2);
             return;
         }
         lastClickTime = currentTime;
@@ -171,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 firstCardFlipped = false;
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
 
                 if (data.turn_complete) {
                     if (data.is_match) {
@@ -180,21 +190,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         markAsMatched(firstCard);
                         updateScore(data.player_score);
                         
-                        // Enhanced match animation
                         statusMessage.textContent = '🎉 Match! 🎉';
                         statusMessage.classList.add('match-highlight');
                         
-                        card.classList.add('match-effect');
-                        firstCard.classList.add('match-effect');
-                        
                         setTimeout(() => {
                             statusMessage.classList.remove('match-highlight');
-                            card.classList.remove('match-effect');
-                            firstCard.classList.remove('match-effect');
-                        }, 1500);
+                        }, MATCH_DISPLAY_DURATION);
                     } else {
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
-                        await new Promise(resolve => setTimeout(resolve, 500));
+                        await new Promise(resolve => setTimeout(resolve, FLIP_ANIMATION_DURATION));
                         unflipCard(card);
                         unflipCard(firstCard);
                         statusMessage.textContent = 'カードを2枚めくってください';
@@ -204,23 +208,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         statusMessage.textContent = data.message;
                         statusMessage.classList.add('game-clear');
                         
-                        // Enhanced game clear celebration
                         document.querySelectorAll('.matched').forEach(card => {
                             card.classList.add('celebration');
                         });
                         
                         cardGrid.style.animation = 'none';
-                        cardGrid.offsetHeight; // Trigger reflow
+                        cardGrid.offsetHeight;
                         cardGrid.style.animation = 'celebrationBorder 2s cubic-bezier(0.4, 0, 0.2, 1) infinite';
                     }
                 }
             } else {
-                handleRateLimitError(card, data.message);
+                handleRateLimitError(card, data.message, data.backoff || 0.2);
             }
         } catch (error) {
             console.error('Error:', error.message);
             if (error.message === 'Rate limit exceeded') {
-                handleRateLimitError(card, '操作が早すぎます');
+                handleRateLimitError(card, '操作が早すぎます', 0.2);
             } else {
                 statusMessage.textContent = 'エラーが発生しました';
                 statusMessage.classList.add('alert-danger');
@@ -244,7 +247,6 @@ document.addEventListener('DOMContentLoaded', function() {
             initializeBoard();
             updateScore(0);
             
-            // Add animation for new game
             cardGrid.style.animation = 'none';
             cardGrid.offsetHeight;
             cardGrid.style.animation = 'fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
