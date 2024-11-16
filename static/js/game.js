@@ -39,23 +39,35 @@ document.addEventListener('DOMContentLoaded', async function() {
         22: '6-1恋人'  // Special case for alternate version
     };
 
-    const preloadImages = () => {
+    let preloadedImages = {};
+
+    const preloadImages = async () => {
         const imagePromises = Object.values(cardImageMap).map(imageName => {
             return new Promise((resolve, reject) => {
                 const img = new Image();
-                img.onload = () => resolve(img);
+                img.onload = () => {
+                    preloadedImages[imageName] = img;
+                    resolve(img);
+                };
                 img.onerror = reject;
                 img.src = `/static/images/${imageName}.png`;
             });
         });
-        // Also preload card back
+        
+        // Preload card back
         imagePromises.push(new Promise((resolve, reject) => {
             const img = new Image();
-            img.onload = () => resolve(img);
+            img.onload = () => {
+                preloadedImages['カード裏面'] = img;
+                resolve(img);
+            };
             img.onerror = reject;
             img.src = '/static/images/カード裏面.png';
         }));
-        return Promise.all(imagePromises);
+        
+        await Promise.all(imagePromises);
+        console.log('Images preloaded and cached');
+        return preloadedImages;
     };
     
     function createCard(index) {
@@ -79,13 +91,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         card.classList.add('flipped');
         const cardImage = card.querySelector('.card-back .card-img');
         const imageName = cardImageMap[value] || `${value}愚者`;
-        cardImage.src = `/static/images/${imageName}.png`;
+        // Set the image before the flip animation starts
+        cardImage.src = preloadedImages[imageName].src;
     }
 
     function unflipCard(card) {
         card.classList.remove('flipped');
-        const cardImage = card.querySelector('.card-back .card-img');
-        cardImage.src = '';
     }
 
     function markAsMatched(card) {
