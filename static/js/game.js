@@ -8,9 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     let firstCardFlipped = false;
     const MAX_RETRIES = 3;
     let lastClickTime = 0;
-    const MIN_CLICK_INTERVAL = 200;  // Reduced from 300ms to 200ms
-    const FLIP_ANIMATION_DURATION = 400; // ms
-    const MATCH_DISPLAY_DURATION = 800; // ms
+    const MIN_CLICK_INTERVAL = 200;  // Kept the improved timing
+    const FLIP_ANIMATION_DURATION = 400;
+    const MATCH_DISPLAY_DURATION = 800;
     
     function createCard(index) {
         const card = document.createElement('div');
@@ -18,11 +18,9 @@ document.addEventListener('DOMContentLoaded', function() {
         card.setAttribute('data-index', index);
         card.innerHTML = `
             <div class="card-inner">
-                <div class="card-front">
-                    <img src="/static/images/card-back.png" alt="card back">
-                </div>
+                <div class="card-front"></div>
                 <div class="card-back">
-                    <img class="card-image" alt="card">
+                    <span class="card-value"></span>
                 </div>
             </div>
             <div class="loading-spinner"></div>
@@ -32,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function initializeBoard() {
         cardGrid.innerHTML = '';
-        for (let i = 0; i < 26; i++) {  // 13 pairs = 26 cards
+        for (let i = 0; i < 44; i++) {
             cardGrid.appendChild(createCard(i));
         }
         firstCardFlipped = false;
@@ -40,30 +38,22 @@ document.addEventListener('DOMContentLoaded', function() {
         statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
         statusMessage.classList.add('alert-info');
         cardGrid.style.animation = 'none';
-        document.querySelectorAll('.matched').forEach(card => {
-            card.classList.remove('celebration');
-        });
     }
 
     function flipCard(card, value) {
         card.classList.add('flipped');
-        const cardImage = card.querySelector('.card-back .card-image');
-        // Preload image before showing
-        const img = new Image();
-        img.onload = () => {
-            cardImage.src = `/static/images/${value}.png`;
-            card.style.transform = 'scale(1.02)';
-            setTimeout(() => {
-                card.style.transform = 'scale(1)';
-            }, FLIP_ANIMATION_DURATION / 2);
-        };
-        img.src = `/static/images/${value}.png`;
+        const cardValue = card.querySelector('.card-value');
+        cardValue.textContent = value;
+        card.style.transform = 'scale(1.02)';
+        setTimeout(() => {
+            card.style.transform = 'scale(1)';
+        }, FLIP_ANIMATION_DURATION / 2);
     }
 
     function unflipCard(card) {
         card.classList.remove('flipped');
-        const cardImage = card.querySelector('.card-back .card-image');
-        cardImage.src = '';
+        const cardValue = card.querySelector('.card-value');
+        cardValue.textContent = '';
         card.style.transition = `transform ${FLIP_ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
     }
 
@@ -109,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function makeRequestWithRetry(url, options, retries = MAX_RETRIES) {
         let attempt = 1;
-        let delay = 200; // Start with 200ms instead of 500ms
+        let delay = 200; // Kept the improved timing
         
         while (attempt <= retries) {
             try {
@@ -123,7 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (attempt < retries) {
                         const backoffTime = data.backoff || delay / 1000;
                         await new Promise(resolve => setTimeout(resolve, backoffTime * 1000));
-                        delay *= 1.2; // Gentler backoff (1.2 instead of 1.5)
+                        delay *= 1.2; // Kept the improved backoff
                         attempt++;
                         continue;
                     }
@@ -149,14 +139,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         lastClickTime = currentTime;
 
-        if (isProcessing) {
-            return;
-        }
+        if (isProcessing) return;
 
         const card = event.target.closest('.memory-card');
-        if (!card || 
-            card.classList.contains('flipped') || 
-            card.classList.contains('matched')) {
+        if (!card || card.classList.contains('flipped') || card.classList.contains('matched')) {
             return;
         }
 
@@ -207,13 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.game_over) {
                         statusMessage.textContent = data.message;
                         statusMessage.classList.add('game-clear');
-                        
-                        document.querySelectorAll('.matched').forEach(card => {
-                            card.classList.add('celebration');
-                        });
-                        
-                        cardGrid.style.animation = 'none';
-                        cardGrid.offsetHeight;
                         cardGrid.style.animation = 'celebrationBorder 2s cubic-bezier(0.4, 0, 0.2, 1) infinite';
                     }
                 }
@@ -247,8 +226,6 @@ document.addEventListener('DOMContentLoaded', function() {
             initializeBoard();
             updateScore(0);
             
-            cardGrid.style.animation = 'none';
-            cardGrid.offsetHeight;
             cardGrid.style.animation = 'fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
             
             statusMessage.textContent = 'カードを2枚めくってください';

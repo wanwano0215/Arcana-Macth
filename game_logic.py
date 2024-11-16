@@ -8,8 +8,8 @@ class GameState:
         self.first_card: Optional[int] = None
         
     def _create_cards(self) -> List[Dict[str, Any]]:
-        # Create pairs of cards (0-12 for now, each appears twice)
-        values = list(range(0, 13)) * 2  # Update range to match available images
+        # Create pairs of cards (1-22, each appears twice)
+        values = list(range(1, 23)) * 2
         random.shuffle(values)
         return [{'value': v, 'flipped': False, 'matched': False} for v in values]
     
@@ -21,7 +21,6 @@ class GameState:
                     'valid': False,
                     'message': '無効なカードです'
                 }
-            # Add state validation
             if self.cards[card_index]['matched']:
                 return {
                     'valid': False,
@@ -38,7 +37,6 @@ class GameState:
                 'message': '無効なカード番号です'
             }
             
-        # Add explicit state check
         if self.first_card == card_index:
             return {
                 'valid': False,
@@ -57,7 +55,6 @@ class GameState:
                 'message': 'カードを2枚めくってください'
             }
         
-        # Second card
         second_card = card_index
         first_card_value = self.cards[self.first_card]['value']
         second_card_value = self.cards[second_card]['value']
@@ -78,18 +75,15 @@ class GameState:
             'message': '🎉 Match! 🎉' if is_match else 'No match!'
         }
         
-        # Only include player_score in the response when there's a match
         if is_match:
             result['player_score'] = self.player_score
         
         if not is_match:
-            # Reset cards after delay (handled by frontend)
             self.cards[self.first_card]['flipped'] = False
             self.cards[second_card]['flipped'] = False
             
         self.first_card = None
         
-        # Check if game is over
         if all(card['matched'] for card in self.cards):
             result['game_over'] = True
             result['message'] = f'🎊 Game Clear! 🎊 Score: {self.player_score}'
@@ -97,7 +91,6 @@ class GameState:
         return result
     
     def to_dict(self) -> Dict[str, Any]:
-        # Ensure all numeric values are explicitly converted to int
         return {
             'cards': [{
                 'value': int(card['value']),

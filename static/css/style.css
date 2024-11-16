@@ -1,4 +1,4 @@
-/* Import Noto Sans JP from Google Fonts instead of local file */
+/* Import Noto Sans JP from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap');
 
 body {
@@ -8,19 +8,16 @@ body {
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(13, 1fr); /* Increase from 11 to 13 columns */
-    grid-template-rows: repeat(2, 1fr);  /* Reduce from 4 to 2 rows */
-    gap: 8px;  /* Reduce gap from 10px to 8px */
+    grid-template-columns: repeat(11, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 10px;
     margin: 0 auto;
-    max-width: 1200px;  /* Reduce from 1400px */
-    padding: 15px;
+    max-width: 1400px;
+    padding: 20px;
 }
 
 .memory-card {
     aspect-ratio: 2/3;
-    max-width: 80px;  /* Add max-width to limit card size */
-    margin: 0 auto;
-    width: 100%;
     perspective: 1000px;
     cursor: pointer;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -104,7 +101,6 @@ body {
     background-color: #e8f5e9;
     border-color: #4caf50;
     box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .score-board {
@@ -131,7 +127,6 @@ body {
     color: #856404;
 }
 
-/* Rate limit visual feedback */
 .rate-limited {
     animation: shake 0.5s cubic-bezier(0.36, 0, 0.66, -0.56) both;
     border-color: #dc3545 !important;
@@ -143,7 +138,6 @@ body {
     75% { transform: translateX(5px); }
 }
 
-/* Improved match animation */
 @keyframes matchPulse {
     0% { 
         transform: scale(1); 
@@ -163,7 +157,6 @@ body {
     animation: matchPulse 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Game clear celebration */
 @keyframes celebrationBorder {
     0% { 
         box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
@@ -196,21 +189,15 @@ body {
     }
 }
 
-/* Responsive design */
 @media (max-width: 768px) {
     .card-grid {
-        grid-template-columns: repeat(7, 1fr);
-        grid-template-rows: repeat(4, 1fr);
-        gap: 6px;
-        padding: 8px;
-    }
-    
-    .memory-card {
-        max-width: 60px;
+        grid-template-columns: repeat(6, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        gap: 8px;
+        padding: 10px;
     }
 }
 
-/* Button improvements */
 .btn-primary {
     background-color: #4a90e2;
     border-color: #4a90e2;
