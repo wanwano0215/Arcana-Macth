@@ -13,10 +13,10 @@ body {
     display: grid;
     grid-template-columns: repeat(11, 1fr);
     grid-template-rows: repeat(4, 1fr);
-    gap: 8px;           /* 12pxから8pxに縮小 */
+    gap: 12px;
     margin: 0 auto;
-    max-width: 1200px;  /* 1400pxから1200pxに縮小 */
-    padding: 12px;
+    max-width: 1400px;
+    padding: 15px;
     justify-items: center;
     align-items: center;
 }
@@ -24,7 +24,7 @@ body {
 .memory-card {
     aspect-ratio: 0.57;  /* 1170:2048の比率を維持 */
     width: 100%;
-    max-width: 85px;    /* 120pxから85pxに縮小 */
+    max-width: 120px;    /* 85pxから120pxに戻す */
     margin: 0 auto;
     perspective: 1000px;
     cursor: pointer;
@@ -168,12 +168,12 @@ body {
     .card-grid {
         grid-template-columns: repeat(5, 1fr);
         grid-template-rows: repeat(9, 1fr);
-        gap: 6px;      /* 8pxから6pxに縮小 */
-        padding: 8px;
+        gap: 8px;
+        padding: 10px;
     }
     
     .memory-card {
-        max-width: 65px;  /* 90pxから65pxに縮小 */
+        max-width: 90px;  /* 65pxから90pxに戻す */
     }
 }
 
