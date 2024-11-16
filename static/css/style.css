@@ -13,10 +13,10 @@ body {
     display: grid;
     grid-template-columns: repeat(11, 1fr);
     grid-template-rows: repeat(4, 1fr);
-    gap: 15px;          /* 12pxから15pxに増加 */
+    gap: 15px;
     margin: 0 auto;
-    max-width: 1600px;  /* 1400pxから1600pxに増加 */
-    padding: 20px;      /* 15pxから20pxに増加 */
+    max-width: 1600px;
+    padding: 20px;
     justify-items: center;
     align-items: center;
 }
@@ -24,13 +24,14 @@ body {
 .memory-card {
     aspect-ratio: 0.57;  /* 1170:2048の比率を維持 */
     width: 100%;
-    max-width: 100px;    /* 120pxから100pxに縮小 */
+    max-width: 100px;
     margin: 0 auto;
     perspective: 1000px;
     cursor: pointer;
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;  /* 追加 */
 }
 
 .card-canvas {
@@ -82,17 +83,21 @@ body {
     justify-content: center;
     border-radius: 8px;
     background-color: transparent;
+    overflow: hidden;      /* 追加 */
 }
 
 .card-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;  /* coverからcontainに変更 */
     border-radius: 8px;
     pointer-events: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform, opacity;
     backface-visibility: hidden;
+    box-sizing: border-box;  /* 追加 */
+    padding: 0;             /* 追加 */
+    margin: 0;              /* 追加 */
 }
 
 .card-front {
@@ -168,12 +173,12 @@ body {
     .card-grid {
         grid-template-columns: repeat(5, 1fr);
         grid-template-rows: repeat(9, 1fr);
-        gap: 10px;       /* 8pxから10pxに増加 */
-        padding: 15px;   /* 10pxから15pxに増加 */
+        gap: 10px;
+        padding: 15px;
     }
     
     .memory-card {
-        max-width: 80px;  /* 90pxから80pxに縮小 */
+        max-width: 80px;
     }
 }
 
