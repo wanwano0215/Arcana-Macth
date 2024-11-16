@@ -11,29 +11,39 @@ body {
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(11, 1fr);
+    grid-template-columns: repeat(11, minmax(0, 1fr));
     grid-template-rows: repeat(4, 1fr);
-    gap: 15px;
+    gap: 12px;
     margin: 0 auto;
-    max-width: 1600px;
-    padding: 20px;
-    justify-items: center;
-    align-items: center;
+    max-width: 1400px;
+    padding: 15px;
+    justify-items: stretch;
+    align-items: stretch;
 }
 
 .memory-card {
-    aspect-ratio: 0.57;  /* 1170:2048の比率を維持 */
+    aspect-ratio: 0.57;
     width: 100%;
-    max-width: 100px;
+    max-width: 90px;
+    height: auto;
     margin: 0 auto;
     perspective: 1000px;
     cursor: pointer;
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-sizing: border-box;  /* 追加 */
+    box-sizing: border-box;
 }
 
+.card-inner {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Rest of the existing styles */
 .card-canvas {
     position: absolute;
     top: 0;
@@ -60,15 +70,6 @@ body {
     transform: none;
 }
 
-.card-inner {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform;
-}
-
 .memory-card.flipped .card-inner {
     transform: rotateY(180deg);
 }
@@ -83,21 +84,21 @@ body {
     justify-content: center;
     border-radius: 8px;
     background-color: transparent;
-    overflow: hidden;      /* 追加 */
+    overflow: hidden;
 }
 
 .card-img {
     width: 100%;
     height: 100%;
-    object-fit: contain;  /* coverからcontainに変更 */
+    object-fit: contain;
     border-radius: 8px;
     pointer-events: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform, opacity;
     backface-visibility: hidden;
-    box-sizing: border-box;  /* 追加 */
-    padding: 0;             /* 追加 */
-    margin: 0;              /* 追加 */
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
 }
 
 .card-front {
@@ -171,14 +172,14 @@ body {
 /* モバイル表示の調整 */
 @media (max-width: 768px) {
     .card-grid {
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         grid-template-rows: repeat(9, 1fr);
-        gap: 10px;
-        padding: 15px;
+        gap: 8px;
+        padding: 10px;
     }
     
     .memory-card {
-        max-width: 80px;
+        max-width: 70px;
     }
 }
 
