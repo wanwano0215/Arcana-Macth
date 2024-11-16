@@ -8,9 +8,36 @@ document.addEventListener('DOMContentLoaded', function() {
     let firstCardFlipped = false;
     const MAX_RETRIES = 3;
     let lastClickTime = 0;
-    const MIN_CLICK_INTERVAL = 200;  // Kept the improved timing
-    const FLIP_ANIMATION_DURATION = 400;
-    const MATCH_DISPLAY_DURATION = 800;
+    const MIN_CLICK_INTERVAL = 200;
+    const FLIP_ANIMATION_DURATION = 600;  // Increased for smoother animation
+    const MATCH_DISPLAY_DURATION = 1000;  // Increased for better visibility
+    
+    // Map card values to their corresponding image names
+    const cardImageMap = {
+        0: '0愚者',
+        1: '1魔術師',
+        2: '2女教皇',
+        3: '3女帝',
+        4: '4皇帝',
+        5: '5教皇',
+        6: '6恋人',
+        7: '7戦車',
+        8: '8力',
+        9: '9隠者',
+        10: '10運命の輪',
+        11: '11正義',
+        12: '12吊るされた男',
+        13: '13死神',
+        14: '14節制',
+        15: '15悪魔',
+        16: '16塔',
+        17: '17星',
+        18: '18月',
+        19: '19太陽',
+        20: '20審判',
+        21: '21世界',
+        22: '6-1恋人'  // Special case for alternate version
+    };
     
     function createCard(index) {
         const card = document.createElement('div');
@@ -45,24 +72,39 @@ document.addEventListener('DOMContentLoaded', function() {
     function flipCard(card, value) {
         card.classList.add('flipped');
         const cardImage = card.querySelector('.card-back .card-img');
-        // Match the file naming pattern for the tarot cards
-        cardImage.src = `/static/images/${value}愚者.png`;
-        card.style.transform = 'scale(1.02)';
+        const imageName = cardImageMap[value] || `${value}愚者`;  // Fallback for unexpected values
+        cardImage.src = `/static/images/${imageName}.png`;
+        
+        // Enhanced flip animation
+        card.style.transform = 'scale(1.05)';
+        card.style.transition = `all ${FLIP_ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+        
         setTimeout(() => {
             card.style.transform = 'scale(1)';
         }, FLIP_ANIMATION_DURATION / 2);
     }
 
     function unflipCard(card) {
-        card.classList.remove('flipped');
-        const cardImage = card.querySelector('.card-back .card-img');
-        cardImage.src = '';
-        card.style.transition = `transform ${FLIP_ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+        // Add pre-unflip animation
+        card.style.transform = 'scale(1.02)';
+        
+        setTimeout(() => {
+            card.classList.remove('flipped');
+            card.style.transform = 'scale(1)';
+            const cardImage = card.querySelector('.card-back .card-img');
+            cardImage.src = '';
+        }, 50);
     }
 
     function markAsMatched(card) {
         card.classList.add('matched');
+        // Enhanced match animation
         card.style.animation = `matchPulse ${MATCH_DISPLAY_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+        card.style.transform = 'scale(1.05)';
+        
+        setTimeout(() => {
+            card.style.transform = 'scale(1)';
+        }, MATCH_DISPLAY_DURATION);
     }
 
     function updateScore(score) {
@@ -82,8 +124,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function showLoadingState(card, show) {
         if (show) {
             card.classList.add('loading');
+            card.style.transform = 'scale(0.98)';  // Subtle shrink effect
         } else {
             card.classList.remove('loading');
+            card.style.transform = 'scale(1)';
         }
     }
 
@@ -102,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function makeRequestWithRetry(url, options, retries = MAX_RETRIES) {
         let attempt = 1;
-        let delay = 200; // Kept the improved timing
+        let delay = 200;
         
         while (attempt <= retries) {
             try {
@@ -116,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (attempt < retries) {
                         const backoffTime = data.backoff || delay / 1000;
                         await new Promise(resolve => setTimeout(resolve, backoffTime * 1000));
-                        delay *= 1.2; // Kept the improved backoff
+                        delay *= 1.2;
                         attempt++;
                         continue;
                     }
