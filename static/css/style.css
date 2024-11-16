@@ -11,20 +11,20 @@ body {
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(11, 1fr);  /* minmaxを削除 */
+    grid-template-columns: repeat(11, 1fr);
     grid-template-rows: repeat(4, 1fr);
     gap: 12px;
     margin: 0 auto;
     max-width: 1400px;
     padding: 15px;
-    justify-items: center;    /* stretchからcenterに変更 */
-    align-items: center;      /* stretchからcenterに変更 */
+    justify-items: center;
+    align-items: center;
 }
 
 .memory-card {
     aspect-ratio: 0.57;
-    width: 80px;           /* 固定幅に変更 */
-    height: 140px;         /* 固定高さに変更 */
+    width: 80px;
+    height: 140px;
     margin: 0 auto;
     perspective: 1000px;
     cursor: pointer;
@@ -40,36 +40,6 @@ body {
     height: 100%;
     transform-style: preserve-3d;
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 8px;
-    transform-style: preserve-3d;
-    backface-visibility: hidden;
-}
-
-.memory-card:hover:not(.flipped):not(.matched):not(.loading) {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.memory-card.disabled {
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-.memory-card.loading {
-    pointer-events: none;
-    transform: none;
-}
-
-.memory-card.flipped .card-inner {
-    transform: rotateY(180deg);
 }
 
 .card-front, .card-back {
@@ -88,22 +58,41 @@ body {
 .card-img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
     border-radius: 8px;
     pointer-events: none;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     will-change: transform, opacity;
     backface-visibility: hidden;
     box-sizing: border-box;
-    padding: 0;
-    margin: 0;
 }
 
 .card-front {
     transform: rotateY(0deg);
+    z-index: 2;
 }
 
 .card-back {
+    transform: rotateY(180deg);
+    z-index: 1;
+}
+
+.memory-card:hover:not(.flipped):not(.matched):not(.loading) {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.memory-card.disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.memory-card.loading {
+    pointer-events: none;
+    transform: none;
+}
+
+.memory-card.flipped .card-inner {
     transform: rotateY(180deg);
 }
 
@@ -177,8 +166,8 @@ body {
     }
     
     .memory-card {
-        width: 60px;      /* モバイル用の固定幅 */
-        height: 105px;    /* モバイル用の固定高さ */
+        width: 60px;
+        height: 105px;
     }
 }
 
