@@ -71,7 +71,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <img class="card-img" alt="card front">
                 </div>
             </div>
-            <div class="loading-spinner"></div>
         `;
         return card;
     }
