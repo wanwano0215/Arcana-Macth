@@ -18,9 +18,11 @@ document.addEventListener('DOMContentLoaded', function() {
         card.setAttribute('data-index', index);
         card.innerHTML = `
             <div class="card-inner">
-                <div class="card-front"></div>
+                <div class="card-front">
+                    <img src="/static/images/カード裏面.png" alt="card back" class="card-img">
+                </div>
                 <div class="card-back">
-                    <span class="card-value"></span>
+                    <img class="card-img" alt="card front">
                 </div>
             </div>
             <div class="loading-spinner"></div>
@@ -42,8 +44,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function flipCard(card, value) {
         card.classList.add('flipped');
-        const cardValue = card.querySelector('.card-value');
-        cardValue.textContent = value;
+        const cardImage = card.querySelector('.card-back .card-img');
+        // Match the file naming pattern for the tarot cards
+        cardImage.src = `/static/images/${value}愚者.png`;
         card.style.transform = 'scale(1.02)';
         setTimeout(() => {
             card.style.transform = 'scale(1)';
@@ -52,8 +55,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function unflipCard(card) {
         card.classList.remove('flipped');
-        const cardValue = card.querySelector('.card-value');
-        cardValue.textContent = '';
+        const cardImage = card.querySelector('.card-back .card-img');
+        cardImage.src = '';
         card.style.transition = `transform ${FLIP_ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
     }
 
@@ -122,6 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 throw new Error(`HTTP error! status: ${response.status}`);
             } catch (error) {
+                console.warn('Attempt ' + attempt + ' failed:', error.message);
                 if (attempt === retries) throw error;
                 await new Promise(resolve => setTimeout(resolve, delay));
                 delay *= 1.2;
