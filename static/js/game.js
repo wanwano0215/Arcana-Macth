@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const cardGrid = document.getElementById('card-grid');
     const statusMessage = document.getElementById('status-message');
     const playerScoreElement = document.getElementById('player-score');
@@ -9,8 +9,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const MAX_RETRIES = 3;
     let lastClickTime = 0;
     const MIN_CLICK_INTERVAL = 200;
-    const FLIP_ANIMATION_DURATION = 600;  // Increased for smoother animation
-    const MATCH_DISPLAY_DURATION = 1000;  // Increased for better visibility
+    const FLIP_ANIMATION_DURATION = 400;
+    const MATCH_DISPLAY_DURATION = 800;
     
     // Map card values to their corresponding image names
     const cardImageMap = {
@@ -38,6 +38,25 @@ document.addEventListener('DOMContentLoaded', function() {
         21: '21世界',
         22: '6-1恋人'  // Special case for alternate version
     };
+
+    const preloadImages = () => {
+        const imagePromises = Object.values(cardImageMap).map(imageName => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = `/static/images/${imageName}.png`;
+            });
+        });
+        // Also preload card back
+        imagePromises.push(new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = '/static/images/カード裏面.png';
+        }));
+        return Promise.all(imagePromises);
+    };
     
     function createCard(index) {
         const card = document.createElement('div');
@@ -57,77 +76,34 @@ document.addEventListener('DOMContentLoaded', function() {
         return card;
     }
 
-    function initializeBoard() {
-        cardGrid.innerHTML = '';
-        for (let i = 0; i < 44; i++) {
-            cardGrid.appendChild(createCard(i));
-        }
-        firstCardFlipped = false;
-        statusMessage.textContent = 'カードを2枚めくってください';
-        statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
-        statusMessage.classList.add('alert-info');
-        cardGrid.style.animation = 'none';
-    }
-
     function flipCard(card, value) {
         card.classList.add('flipped');
         const cardImage = card.querySelector('.card-back .card-img');
-        const imageName = cardImageMap[value] || `${value}愚者`;  // Fallback for unexpected values
+        const imageName = cardImageMap[value] || `${value}愚者`;
         cardImage.src = `/static/images/${imageName}.png`;
-        
-        // Enhanced flip animation
-        card.style.transform = 'scale(1.05)';
-        card.style.transition = `all ${FLIP_ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-        
-        setTimeout(() => {
-            card.style.transform = 'scale(1)';
-        }, FLIP_ANIMATION_DURATION / 2);
     }
 
     function unflipCard(card) {
-        // Add pre-unflip animation
-        card.style.transform = 'scale(1.02)';
-        
-        setTimeout(() => {
-            card.classList.remove('flipped');
-            card.style.transform = 'scale(1)';
-            const cardImage = card.querySelector('.card-back .card-img');
-            cardImage.src = '';
-        }, 50);
+        card.classList.remove('flipped');
+        const cardImage = card.querySelector('.card-back .card-img');
+        cardImage.src = '';
     }
 
     function markAsMatched(card) {
         card.classList.add('matched');
-        // Enhanced match animation
-        card.style.animation = `matchPulse ${MATCH_DISPLAY_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-        card.style.transform = 'scale(1.05)';
-        
-        setTimeout(() => {
-            card.style.transform = 'scale(1)';
-        }, MATCH_DISPLAY_DURATION);
     }
 
     function updateScore(score) {
         if (playerScoreElement) {
-            const oldScore = parseInt(playerScoreElement.textContent);
             playerScoreElement.textContent = score;
-            
-            if (score > oldScore) {
-                playerScoreElement.classList.add('match-highlight');
-                setTimeout(() => {
-                    playerScoreElement.classList.remove('match-highlight');
-                }, MATCH_DISPLAY_DURATION);
-            }
         }
     }
 
     function showLoadingState(card, show) {
         if (show) {
             card.classList.add('loading');
-            card.style.transform = 'scale(0.98)';  // Subtle shrink effect
         } else {
             card.classList.remove('loading');
-            card.style.transform = 'scale(1)';
         }
     }
 
@@ -223,13 +199,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         markAsMatched(card);
                         markAsMatched(firstCard);
                         updateScore(data.player_score);
-                        
                         statusMessage.textContent = '🎉 Match! 🎉';
-                        statusMessage.classList.add('match-highlight');
-                        
-                        setTimeout(() => {
-                            statusMessage.classList.remove('match-highlight');
-                        }, MATCH_DISPLAY_DURATION);
                     } else {
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
                         await new Promise(resolve => setTimeout(resolve, FLIP_ANIMATION_DURATION));
@@ -241,7 +211,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.game_over) {
                         statusMessage.textContent = data.message;
                         statusMessage.classList.add('game-clear');
-                        cardGrid.style.animation = 'celebrationBorder 2s cubic-bezier(0.4, 0, 0.2, 1) infinite';
                     }
                 }
             } else {
@@ -273,9 +242,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             initializeBoard();
             updateScore(0);
-            
-            cardGrid.style.animation = 'fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-            
             statusMessage.textContent = 'カードを2枚めくってください';
             statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
             statusMessage.classList.add('alert-info');
@@ -284,6 +250,25 @@ document.addEventListener('DOMContentLoaded', function() {
             statusMessage.textContent = '新しいゲームを開始できませんでした';
             statusMessage.classList.add('alert-danger');
         }
+    }
+
+    function initializeBoard() {
+        cardGrid.innerHTML = '';
+        for (let i = 0; i < 44; i++) {
+            cardGrid.appendChild(createCard(i));
+        }
+        firstCardFlipped = false;
+        statusMessage.textContent = 'カードを2枚めくってください';
+        statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
+        statusMessage.classList.add('alert-info');
+    }
+
+    // Preload images before starting the game
+    try {
+        await preloadImages();
+        console.log('Images preloaded successfully');
+    } catch (error) {
+        console.warn('Error preloading images:', error);
     }
 
     newGameBtn.addEventListener('click', startNewGame);

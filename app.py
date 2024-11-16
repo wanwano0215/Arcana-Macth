@@ -58,8 +58,8 @@ def recover_session():
 
 # Rate limiting
 request_times = {}
-RATE_LIMIT = 0.2  # Reduced from 0.3 to 0.2 seconds
-BURST_LIMIT = 5   # Increased from 4 to 5 requests
+RATE_LIMIT = 0.15  # Reduced from 0.2 to 0.15
+BURST_LIMIT = 6   # Increased from 5 to 6
 BURST_WINDOW = 2  # Within 2 seconds window
 CLEANUP_INTERVAL = 60  # Cleanup every minute
 
@@ -112,6 +112,13 @@ def rate_limit():
     request_times[session_key]['attempts'] = 0
     request_times[session_key]['times'].append(current_time)
     return False, 0
+
+@app.after_request
+def add_header(response):
+    """Add caching headers to responses"""
+    if 'Cache-Control' not in response.headers:
+        response.headers['Cache-Control'] = 'public, max-age=300'
+    return response
 
 @app.route('/')
 def index():
