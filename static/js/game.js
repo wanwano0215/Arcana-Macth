@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const cardGrid = document.getElementById('card-grid');
     const statusMessage = document.getElementById('status-message');
     const playerScoreElement = document.getElementById('player-score');
@@ -11,6 +11,66 @@ document.addEventListener('DOMContentLoaded', function() {
     const MIN_CLICK_INTERVAL = 200;
     const FLIP_ANIMATION_DURATION = 600;
     const MATCH_DISPLAY_DURATION = 1000;
+    
+    // Map card values to their corresponding image names
+    const cardImageMap = {
+        0: '0愚者',
+        1: '1魔術師',
+        2: '2女教皇',
+        3: '3女帝',
+        4: '4皇帝',
+        5: '5教皇',
+        6: '6恋人',
+        7: '7戦車',
+        8: '8力',
+        9: '9隠者',
+        10: '10運命の輪',
+        11: '11正義',
+        12: '12吊るされた男',
+        13: '13死神',
+        14: '14節制',
+        15: '15悪魔',
+        16: '16塔',
+        17: '17星',
+        18: '18月',
+        19: '19太陽',
+        20: '20審判',
+        21: '21世界',
+        22: '6-1恋人'
+    };
+
+    let preloadedImages = new Map();
+
+    const preloadImages = async () => {
+        const loadImage = (imageName) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    preloadedImages.set(imageName, img);
+                    resolve(img);
+                };
+                img.onerror = () => {
+                    console.error(`Failed to load image: ${imageName}`);
+                    reject(new Error(`Failed to load image: ${imageName}`));
+                };
+                img.src = `/static/images/${imageName}.png`;
+            });
+        };
+
+        try {
+            // Load all card faces
+            const imagePromises = Object.values(cardImageMap).map(imageName => loadImage(imageName));
+            
+            // Load card back
+            imagePromises.push(loadImage('カード裏面'));
+            
+            await Promise.all(imagePromises);
+            console.log('Images preloaded successfully');
+        } catch (error) {
+            console.error('Error preloading images:', error);
+            throw error;
+        }
+    };
 
     function createCard(index) {
         const card = document.createElement('div');
@@ -18,23 +78,31 @@ document.addEventListener('DOMContentLoaded', function() {
         card.setAttribute('data-index', index);
         card.innerHTML = `
             <div class="card-inner">
-                <div class="card-front"></div>
-                <div class="card-back"></div>
+                <div class="card-front">
+                    <img src="/static/images/カード裏面.png" alt="card back" class="card-img">
+                </div>
+                <div class="card-back">
+                    <img src="" alt="card front" class="card-img">
+                </div>
             </div>
         `;
         return card;
     }
 
     async function flipCard(card, value) {
-        const backFace = card.querySelector('.card-back');
-        backFace.textContent = value;
+        const backFace = card.querySelector('.card-back img');
+        const imageName = cardImageMap[value] || `${value}愚者`;
+        backFace.src = `/static/images/${imageName}.png`;
         card.classList.add('flipped');
     }
 
     async function unflipCard(card) {
         card.classList.remove('flipped');
-        const backFace = card.querySelector('.card-back');
-        backFace.textContent = '';
+        // Reset the back face image after animation completes
+        setTimeout(() => {
+            const backFace = card.querySelector('.card-back img');
+            backFace.src = '';
+        }, FLIP_ANIMATION_DURATION);
     }
 
     function markAsMatched(card) {
@@ -210,6 +278,14 @@ document.addEventListener('DOMContentLoaded', function() {
         statusMessage.textContent = 'カードを2枚めくってください';
         statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
         statusMessage.classList.add('alert-info');
+    }
+
+    // Preload images before starting the game
+    try {
+        await preloadImages();
+        console.log('Images preloaded successfully');
+    } catch (error) {
+        console.warn('Error preloading images:', error);
     }
 
     newGameBtn.addEventListener('click', startNewGame);
