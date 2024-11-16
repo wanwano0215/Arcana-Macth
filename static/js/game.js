@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         3: '3女帝',
         4: '4皇帝',
         5: '5教皇',
-        6: '6恋人',
         7: '7戦車',
         8: '8力',
         9: '9隠者',
@@ -35,8 +34,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         18: '18月',
         19: '19太陽',
         20: '20審判',
-        21: '21世界',
-        22: '6-1恋人'
+        21: '21世界'
     };
 
     let preloadedImages = new Map();
