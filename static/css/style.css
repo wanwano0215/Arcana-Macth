@@ -3,7 +3,7 @@
 
 body {
     font-family: 'Noto Sans JP', sans-serif;
-    background-image: url('/static/images/イラスト2.png');
+    background-image: url('/static/images/background.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

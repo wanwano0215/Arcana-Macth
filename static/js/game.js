@@ -15,44 +15,51 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Audio state management
     let audioInitialized = false;
     let audioEnabled = true;
+    let audioContext = null;
+    let cardFlipBuffer = null;
 
     // Initialize audio context and players
     async function initializeAudio() {
         if (audioInitialized) return;
         
         try {
-            // Create simple tone fallback
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
+            // Initialize Web Audio API context
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            // Try loading MP3 first
-            const audio = new Audio('/static/sounds/card-flip.mp3');
-            
-            await new Promise((resolve, reject) => {
-                audio.addEventListener('canplaythrough', () => {
-                    window.cardFlipPlayer = audio;
-                    resolve();
-                }, { once: true });
+            // Try loading MP3 files in order of preference
+            const audioFiles = [
+                '/static/sounds/card-flip.mp3',
+                '/static/sounds/flip.mp3',
+                '/static/sounds/card.mp3'
+            ];
+
+            for (const audioFile of audioFiles) {
+                try {
+                    const response = await fetch(audioFile);
+                    if (!response.ok) continue;
+                    
+                    const arrayBuffer = await response.arrayBuffer();
+                    cardFlipBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    break;
+                } catch (error) {
+                    console.warn(`Failed to load ${audioFile}, trying next...`);
+                    continue;
+                }
+            }
+
+            // If no audio file loaded successfully, create a simple tone
+            if (!cardFlipBuffer) {
+                const duration = 0.1;
+                const sampleRate = audioContext.sampleRate;
+                cardFlipBuffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
+                const channelData = cardFlipBuffer.getChannelData(0);
                 
-                audio.addEventListener('error', async () => {
-                    // Fallback to simple tone if MP3 fails
-                    window.cardFlipPlayer = {
-                        play: async () => {
-                            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-                            oscillator.start(audioContext.currentTime);
-                            oscillator.stop(audioContext.currentTime + 0.1);
-                        }
-                    };
-                    resolve();
-                }, { once: true });
-                
-                audio.load();
-            });
+                for (let i = 0; i < cardFlipBuffer.length; i++) {
+                    // Generate a simple decreasing frequency tone
+                    const t = i / sampleRate;
+                    channelData[i] = Math.sin(2 * Math.PI * 800 * t) * Math.exp(-8 * t);
+                }
+            }
             
             audioInitialized = true;
             console.log('Audio initialized successfully');
@@ -64,23 +71,32 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Cleanup function for audio resources
     function cleanupAudio() {
-        if (window.cardFlipPlayer) {
-            if (window.cardFlipPlayer.pause) {
-                window.cardFlipPlayer.pause();
-                window.cardFlipPlayer.src = '';
-            }
-            window.cardFlipPlayer = null;
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
         }
+        cardFlipBuffer = null;
         audioInitialized = false;
-        audioEnabled = true; // Reset for next initialization
+        audioEnabled = true;
     }
 
     // Audio playback with fallback
     async function playCardFlipSound() {
-        if (!audioEnabled || !window.cardFlipPlayer) return;
+        if (!audioEnabled || !audioContext || !cardFlipBuffer) return;
         
         try {
-            await window.cardFlipPlayer.play();
+            const source = audioContext.createBufferSource();
+            source.buffer = cardFlipBuffer;
+            
+            // Add a gain node for volume control
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 0.5; // 50% volume
+            
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Start playback
+            source.start(0);
         } catch (error) {
             console.error('Error playing card flip sound:', error);
             audioEnabled = false;
