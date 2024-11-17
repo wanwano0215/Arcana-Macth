@@ -12,27 +12,91 @@ document.addEventListener('DOMContentLoaded', async function() {
     const FLIP_ANIMATION_DURATION = 600;
     const MATCH_DISPLAY_DURATION = 1000;
     
-    // Initialize Tone.js
-    const synth = new Tone.Synth({
-        oscillator: {
-            type: "sine"
-        },
-        envelope: {
-            attack: 0.01,
-            decay: 0.1,
-            sustain: 0.1,
-            release: 0.1
-        }
-    }).toDestination();
-    synth.volume.value = -20; // Lower volume
+    // Audio state management
+    let audioInitialized = false;
+    let audioEnabled = true;
 
-    // Initialize Tone.js player for card flip sound
-    const cardFlipPlayer = new Tone.Player({
-        url: "/static/sounds/card_flip.mp3",
-        autostart: false,
-        volume: -15
-    }).toDestination();
-    
+    // Initialize audio context and players
+    async function initializeAudio() {
+        if (audioInitialized) return;
+        
+        try {
+            await Tone.start();
+            
+            window.synth = new Tone.Synth({
+                oscillator: { type: "sine" },
+                envelope: {
+                    attack: 0.01,
+                    decay: 0.1,
+                    sustain: 0.1,
+                    release: 0.1
+                }
+            }).toDestination();
+            window.synth.volume.value = -20;
+
+            window.cardFlipPlayer = new Tone.Player({
+                url: "/static/sounds/card_flip.mp3",
+                autostart: false,
+                volume: -15
+            }).toDestination();
+
+            await Promise.all([
+                new Promise((resolve) => {
+                    window.cardFlipPlayer.loaded().then(resolve).catch(resolve);
+                })
+            ]);
+
+            audioInitialized = true;
+        } catch (error) {
+            audioEnabled = false;
+        }
+    }
+
+    // Cleanup function for audio resources
+    function cleanupAudio() {
+        if (window.synth) {
+            window.synth.dispose();
+        }
+        if (window.cardFlipPlayer) {
+            window.cardFlipPlayer.dispose();
+        }
+        audioInitialized = false;
+    }
+
+    // Audio playback with fallback
+    async function playCardFlipSound() {
+        if (!audioEnabled) return;
+        
+        try {
+            if (!audioInitialized) {
+                await initializeAudio();
+            }
+            if (window.cardFlipPlayer && window.cardFlipPlayer.loaded) {
+                window.cardFlipPlayer.start();
+            }
+        } catch (error) {
+            audioEnabled = false;
+        }
+    }
+
+    async function playMatchSound() {
+        if (!audioEnabled) return;
+        
+        try {
+            if (!audioInitialized) {
+                await initializeAudio();
+            }
+            if (window.synth) {
+                const now = Tone.now();
+                window.synth.triggerAttackRelease("C4", "16n", now);
+                window.synth.triggerAttackRelease("E4", "16n", now + 0.1);
+                window.synth.triggerAttackRelease("G4", "16n", now + 0.2);
+            }
+        } catch (error) {
+            audioEnabled = false;
+        }
+    }
+
     // Map card values to their corresponding image names
     const cardImageMap = {
         0: '0愚者',
@@ -68,26 +132,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                     preloadedImages.set(imageName, img);
                     resolve(img);
                 };
-                img.onerror = () => {
-                    console.error(`Failed to load image: ${imageName}`);
-                    reject(new Error(`Failed to load image: ${imageName}`));
-                };
+                img.onerror = () => reject(new Error(`Failed to load image: ${imageName}`));
                 img.src = `/static/images/${imageName}.png`;
             });
         };
 
         try {
-            // Load all card faces
             const imagePromises = Object.values(cardImageMap).map(imageName => loadImage(imageName));
-            
-            // Load card back
             imagePromises.push(loadImage('カード裏面'));
-            
             await Promise.all(imagePromises);
-            console.log('Images preloaded successfully');
         } catch (error) {
-            console.error('Error preloading images:', error);
-            throw error;
+            // Silent fail for image preload
         }
     };
 
@@ -108,28 +163,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         return card;
     }
 
-    async function playCardFlipSound() {
-        try {
-            await Tone.start();
-            cardFlipPlayer.start();
-        } catch (error) {
-            console.warn('Could not play flip sound:', error);
-        }
-    }
-
-    async function playMatchSound() {
-        try {
-            await Tone.start();
-            // Play a simple success melody
-            const now = Tone.now();
-            synth.triggerAttackRelease("C4", "16n", now);
-            synth.triggerAttackRelease("E4", "16n", now + 0.1);
-            synth.triggerAttackRelease("G4", "16n", now + 0.2);
-        } catch (error) {
-            console.warn('Could not play match sound:', error);
-        }
-    }
-
     async function flipCard(card, value) {
         const backFace = card.querySelector('.card-back img');
         const imageName = cardImageMap[value] || `${value}愚者`;
@@ -141,7 +174,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function unflipCard(card) {
         card.classList.remove('flipped');
         await playCardFlipSound();
-        // Reset the back face image after animation completes
         setTimeout(() => {
             const backFace = card.querySelector('.card-back img');
             backFace.src = '';
@@ -204,7 +236,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 
                 throw new Error(`HTTP error! status: ${response.status}`);
             } catch (error) {
-                console.warn('Attempt ' + attempt + ' failed:', error.message);
                 if (attempt === retries) throw error;
                 await new Promise(resolve => setTimeout(resolve, delay));
                 delay *= 1.2;
@@ -278,7 +309,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 handleRateLimitError(card, data.message, data.backoff || 0.2);
             }
         } catch (error) {
-            console.error('Error:', error.message);
             if (error.message === 'Rate limit exceeded') {
                 handleRateLimitError(card, '操作が早すぎます', 0.2);
             } else {
@@ -307,7 +337,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
             statusMessage.classList.add('alert-info');
         } catch (error) {
-            console.error('Error starting new game:', error.message);
             statusMessage.textContent = '新しいゲームを開始できませんでした';
             statusMessage.classList.add('alert-danger');
         }
@@ -324,15 +353,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         statusMessage.classList.add('alert-info');
     }
 
-    // Preload images before starting the game
-    try {
-        await preloadImages();
-        console.log('Images preloaded successfully');
-    } catch (error) {
-        console.warn('Error preloading images:', error);
-    }
-
-    newGameBtn.addEventListener('click', startNewGame);
-    cardGrid.addEventListener('click', handleCardClick);
-    initializeBoard();
+    // Initialize game
+    (async function initGame() {
+        try {
+            await preloadImages();
+            await initializeAudio();
+        } catch (error) {
+            // Silent fail for initialization
+        }
+        
+        newGameBtn.addEventListener('click', startNewGame);
+        cardGrid.addEventListener('click', handleCardClick);
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', cleanupAudio);
+        
+        initializeBoard();
+    })();
 });
