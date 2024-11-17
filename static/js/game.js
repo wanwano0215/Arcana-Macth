@@ -21,42 +21,38 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (audioInitialized) return;
         
         try {
+            // Create static/sounds directory and ensure file exists before initializing
+            await fetch('/static/sounds/card_flip.mp3', { method: 'HEAD' }).catch(() => {
+                // If sound file doesn't exist, we'll use synthesized sound
+                audioEnabled = true;
+            });
+            
             await Tone.start();
             
-            window.synth = new Tone.Synth({
-                oscillator: { type: "sine" },
+            // Create a simple synth for card flip sound
+            window.cardFlipPlayer = new Tone.Synth({
+                oscillator: {
+                    type: "triangle"
+                },
                 envelope: {
-                    attack: 0.01,
+                    attack: 0.001,
                     decay: 0.1,
-                    sustain: 0.1,
+                    sustain: 0,
                     release: 0.1
                 }
             }).toDestination();
-            window.synth.volume.value = -20;
-
-            window.cardFlipPlayer = new Tone.Player({
-                url: "/static/sounds/card_flip.mp3",
-                autostart: false,
-                volume: -15
-            }).toDestination();
-
-            await Promise.all([
-                new Promise((resolve) => {
-                    window.cardFlipPlayer.loaded().then(resolve).catch(resolve);
-                })
-            ]);
+            window.cardFlipPlayer.volume.value = -20; // Reduce volume
 
             audioInitialized = true;
+            console.log('Audio initialized successfully');
         } catch (error) {
+            console.error('Audio initialization failed:', error);
             audioEnabled = false;
         }
     }
 
     // Cleanup function for audio resources
     function cleanupAudio() {
-        if (window.synth) {
-            window.synth.dispose();
-        }
         if (window.cardFlipPlayer) {
             window.cardFlipPlayer.dispose();
         }
@@ -71,28 +67,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!audioInitialized) {
                 await initializeAudio();
             }
-            if (window.cardFlipPlayer && window.cardFlipPlayer.loaded) {
-                window.cardFlipPlayer.start();
+            if (window.cardFlipPlayer) {
+                window.cardFlipPlayer.triggerAttackRelease("C6", "32n");
             }
         } catch (error) {
-            audioEnabled = false;
-        }
-    }
-
-    async function playMatchSound() {
-        if (!audioEnabled) return;
-        
-        try {
-            if (!audioInitialized) {
-                await initializeAudio();
-            }
-            if (window.synth) {
-                const now = Tone.now();
-                window.synth.triggerAttackRelease("C4", "16n", now);
-                window.synth.triggerAttackRelease("E4", "16n", now + 0.1);
-                window.synth.triggerAttackRelease("G4", "16n", now + 0.2);
-            }
-        } catch (error) {
+            console.error('Error playing card flip sound:', error);
             audioEnabled = false;
         }
     }
@@ -289,7 +268,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         markAsMatched(firstCard);
                         updateScore(data.player_score);
                         statusMessage.textContent = '🎉 Match! 🎉';
-                        await playMatchSound();
                     } else {
                         await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
