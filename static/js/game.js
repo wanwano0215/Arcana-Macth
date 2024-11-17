@@ -21,22 +21,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (audioInitialized) return;
         
         try {
-            await Tone.start();
-            
-            // Create a simple synth for card flip sound
-            window.cardFlipPlayer = new Tone.Synth({
-                oscillator: {
-                    type: "triangle"
-                },
-                envelope: {
-                    attack: 0.001,
-                    decay: 0.1,
-                    sustain: 0,
-                    release: 0.1
-                }
-            }).toDestination();
-            window.cardFlipPlayer.volume.value = -20; // Reduce volume
-
+            const audio = new Audio('/static/sounds/card.mp3');
+            await audio.load();
+            window.cardFlipPlayer = audio;
             audioInitialized = true;
             console.log('Audio initialized successfully');
         } catch (error) {
@@ -48,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Cleanup function for audio resources
     function cleanupAudio() {
         if (window.cardFlipPlayer) {
-            window.cardFlipPlayer.dispose();
+            window.cardFlipPlayer = null;
         }
         audioInitialized = false;
     }
@@ -62,7 +49,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await initializeAudio();
             }
             if (window.cardFlipPlayer) {
-                window.cardFlipPlayer.triggerAttackRelease("C6", "32n");
+                // Clone the audio for overlapping sounds
+                const sound = window.cardFlipPlayer.cloneNode();
+                sound.volume = 0.5; // Adjust volume as needed
+                await sound.play();
             }
         } catch (error) {
             console.error('Error playing card flip sound:', error);
