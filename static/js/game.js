@@ -21,12 +21,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (audioInitialized) return;
         
         try {
-            // Create static/sounds directory and ensure file exists before initializing
-            await fetch('/static/sounds/card_flip.mp3', { method: 'HEAD' }).catch(() => {
-                // If sound file doesn't exist, we'll use synthesized sound
-                audioEnabled = true;
-            });
-            
             await Tone.start();
             
             // Create a simple synth for card flip sound
