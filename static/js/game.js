@@ -26,43 +26,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Initialize Web Audio API context
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
-            // Try loading MP3 files in order of preference
-            const audioFiles = [
-                '/static/sounds/card-flip.mp3',
-                '/static/sounds/flip.mp3',
-                '/static/sounds/card.mp3'
-            ];
-
-            for (const audioFile of audioFiles) {
-                try {
-                    const response = await fetch(audioFile);
-                    if (!response.ok) continue;
-                    
-                    const arrayBuffer = await response.arrayBuffer();
-                    cardFlipBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    break;
-                } catch (error) {
-                    console.warn(`Failed to load ${audioFile}, trying next...`);
-                    continue;
-                }
-            }
-
-            // If no audio file loaded successfully, create a simple tone
-            if (!cardFlipBuffer) {
-                const duration = 0.1;
-                const sampleRate = audioContext.sampleRate;
-                cardFlipBuffer = audioContext.createBuffer(1, sampleRate * duration, sampleRate);
-                const channelData = cardFlipBuffer.getChannelData(0);
+            // Load only card.mp3
+            try {
+                const response = await fetch('/static/sounds/card.mp3');
+                if (!response.ok) throw new Error('Failed to load audio file');
                 
-                for (let i = 0; i < cardFlipBuffer.length; i++) {
-                    // Generate a simple decreasing frequency tone
-                    const t = i / sampleRate;
-                    channelData[i] = Math.sin(2 * Math.PI * 800 * t) * Math.exp(-8 * t);
-                }
+                const arrayBuffer = await response.arrayBuffer();
+                cardFlipBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                
+                audioInitialized = true;
+                console.log('Audio initialized successfully');
+            } catch (error) {
+                console.error('Failed to load audio file:', error);
+                audioEnabled = false;
             }
-            
-            audioInitialized = true;
-            console.log('Audio initialized successfully');
         } catch (error) {
             console.error('Audio initialization failed:', error);
             audioEnabled = false;
