@@ -21,11 +21,31 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (audioInitialized) return;
         
         try {
-            const audio = new Audio('/static/sounds/card.mp3');
-            await audio.load();
-            window.cardFlipPlayer = audio;
-            audioInitialized = true;
-            console.log('Audio initialized successfully');
+            // Try multiple audio formats
+            const audioFormats = [
+                '/static/sounds/card-flip.wav',
+                '/static/sounds/card.mp3'
+            ];
+            
+            for (const format of audioFormats) {
+                try {
+                    const audio = new Audio(format);
+                    await new Promise((resolve, reject) => {
+                        audio.addEventListener('canplaythrough', resolve, { once: true });
+                        audio.addEventListener('error', reject, { once: true });
+                        audio.load();
+                    });
+                    
+                    window.cardFlipPlayer = audio;
+                    audioInitialized = true;
+                    console.log('Audio initialized successfully with format:', format);
+                    return;
+                } catch (err) {
+                    console.warn('Failed to load audio format:', format, err);
+                    continue;
+                }
+            }
+            throw new Error('No supported audio format found');
         } catch (error) {
             console.error('Audio initialization failed:', error);
             audioEnabled = false;
@@ -35,25 +55,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Cleanup function for audio resources
     function cleanupAudio() {
         if (window.cardFlipPlayer) {
+            window.cardFlipPlayer.pause();
+            window.cardFlipPlayer.src = '';
             window.cardFlipPlayer = null;
         }
         audioInitialized = false;
+        audioEnabled = true; // Reset for next initialization
     }
 
     // Audio playback with fallback
     async function playCardFlipSound() {
-        if (!audioEnabled) return;
+        if (!audioEnabled || !window.cardFlipPlayer) return;
         
         try {
-            if (!audioInitialized) {
-                await initializeAudio();
-            }
-            if (window.cardFlipPlayer) {
-                // Clone the audio for overlapping sounds
-                const sound = window.cardFlipPlayer.cloneNode();
-                sound.volume = 0.5; // Adjust volume as needed
-                await sound.play();
-            }
+            const sound = window.cardFlipPlayer.cloneNode();
+            sound.volume = 0.5;
+            await sound.play();
         } catch (error) {
             console.error('Error playing card flip sound:', error);
             audioEnabled = false;
