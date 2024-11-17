@@ -12,6 +12,27 @@ document.addEventListener('DOMContentLoaded', async function() {
     const FLIP_ANIMATION_DURATION = 600;
     const MATCH_DISPLAY_DURATION = 1000;
     
+    // Initialize Tone.js
+    const synth = new Tone.Synth({
+        oscillator: {
+            type: "sine"
+        },
+        envelope: {
+            attack: 0.01,
+            decay: 0.1,
+            sustain: 0.1,
+            release: 0.1
+        }
+    }).toDestination();
+    synth.volume.value = -20; // Lower volume
+
+    // Initialize Tone.js player for card flip sound
+    const cardFlipPlayer = new Tone.Player({
+        url: "/static/sounds/card_flip.mp3",
+        autostart: false,
+        volume: -15
+    }).toDestination();
+    
     // Map card values to their corresponding image names
     const cardImageMap = {
         0: '0愚者',
@@ -87,15 +108,39 @@ document.addEventListener('DOMContentLoaded', async function() {
         return card;
     }
 
+    async function playCardFlipSound() {
+        try {
+            await Tone.start();
+            cardFlipPlayer.start();
+        } catch (error) {
+            console.warn('Could not play flip sound:', error);
+        }
+    }
+
+    async function playMatchSound() {
+        try {
+            await Tone.start();
+            // Play a simple success melody
+            const now = Tone.now();
+            synth.triggerAttackRelease("C4", "16n", now);
+            synth.triggerAttackRelease("E4", "16n", now + 0.1);
+            synth.triggerAttackRelease("G4", "16n", now + 0.2);
+        } catch (error) {
+            console.warn('Could not play match sound:', error);
+        }
+    }
+
     async function flipCard(card, value) {
         const backFace = card.querySelector('.card-back img');
         const imageName = cardImageMap[value] || `${value}愚者`;
         backFace.src = `/static/images/${imageName}.png`;
         card.classList.add('flipped');
+        await playCardFlipSound();
     }
 
     async function unflipCard(card) {
         card.classList.remove('flipped');
+        await playCardFlipSound();
         // Reset the back face image after animation completes
         setTimeout(() => {
             const backFace = card.querySelector('.card-back img');
@@ -213,6 +258,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         markAsMatched(firstCard);
                         updateScore(data.player_score);
                         statusMessage.textContent = '🎉 Match! 🎉';
+                        await playMatchSound();
                     } else {
                         await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
