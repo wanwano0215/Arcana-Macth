@@ -26,9 +26,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Initialize Web Audio API context
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
-            // Load only card.mp3
             try {
-                const response = await fetch('/static/sounds/card.mp3');
+                const response = await fetch('/static/sounds/card_flip.mp3');
                 if (!response.ok) throw new Error('Failed to load audio file');
                 
                 const arrayBuffer = await response.arrayBuffer();
