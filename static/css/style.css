@@ -3,7 +3,22 @@
 
 body {
     font-family: 'Noto Sans JP', sans-serif;
-    background-color: #f5f5f5;
+    background-image: url('/static/images/イラスト2.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+/* Add semi-transparent overlay for better card visibility */
+.container {
+    background-color: rgba(245, 245, 245, 0.85);
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
 .logo-container {
