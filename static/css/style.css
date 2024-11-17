@@ -13,7 +13,7 @@ body {
 }
 
 .logo-image {
-    max-width: 600px;
+    max-width: 400px;
     width: 100%;
     height: auto;
     margin: 0 auto;
@@ -46,6 +46,8 @@ body {
     perspective: 1000px;
     cursor: pointer;
     position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-img {
@@ -54,7 +56,8 @@ body {
     object-fit: contain;
     border-radius: 8px;
     pointer-events: none;
-    transition: filter 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .card-inner {
@@ -62,7 +65,7 @@ body {
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-front, .card-back {
@@ -76,6 +79,7 @@ body {
     border-radius: 8px;
     background-color: transparent;
     overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card-front {
@@ -89,18 +93,20 @@ body {
 }
 
 .memory-card:hover:not(.flipped):not(.matched):not(.loading) {
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 
 .memory-card.disabled {
     cursor: not-allowed;
     opacity: 0.7;
+    transform: none;
 }
 
 .memory-card.loading {
     pointer-events: none;
     transform: none;
+    animation: pulse 1.5s infinite;
 }
 
 .memory-card.flipped .card-inner {
@@ -108,63 +114,102 @@ body {
 }
 
 .matched .card-back {
-    box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+    box-shadow: 0 0 30px rgba(76, 175, 80, 0.7);
+    animation: matchGlow 1.5s infinite alternate;
 }
 
 .matched .card-img {
-    filter: brightness(1.1);
+    filter: brightness(1.2);
+    transform: scale(1.05);
 }
 
 .score-board {
     background-color: white;
     padding: 15px;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .score-board:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
 #status-message {
     font-size: 1.2em;
     font-weight: 500;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .alert-warning {
     background-color: #fff3cd;
     border-color: #ffeeba;
     color: #856404;
+    animation: shake 0.6s cubic-bezier(0.36, 0, 0.66, -0.56) both;
 }
 
 .rate-limited {
-    animation: shake 0.5s cubic-bezier(0.36, 0, 0.66, -0.56) both;
+    animation: shake 0.6s cubic-bezier(0.36, 0, 0.66, -0.56) both;
     border-color: #dc3545 !important;
 }
 
 @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
+    0%, 100% { transform: translateX(0) rotate(0); }
+    20% { transform: translateX(-8px) rotate(-2deg); }
+    40% { transform: translateX(8px) rotate(2deg); }
+    60% { transform: translateX(-8px) rotate(-1deg); }
+    80% { transform: translateX(8px) rotate(1deg); }
 }
 
-.game-clear {
-    animation: gameOverPulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-    color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+@keyframes matchGlow {
+    from { box-shadow: 0 0 20px rgba(76, 175, 80, 0.5); }
+    to { box-shadow: 0 0 30px rgba(76, 175, 80, 0.8); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.97); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes gameOverPulse {
     0%, 100% { 
         transform: scale(1);
-        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
     }
     50% { 
         transform: scale(1.1);
-        text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+        text-shadow: 0 0 25px rgba(255, 215, 0, 0.9);
     }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.game-clear {
+    animation: gameOverPulse 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    color: #ffd700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
 }
 
 .btn-primary {
@@ -172,20 +217,20 @@ body {
     border-color: #4a90e2;
     padding: 0.5rem 1.5rem;
     font-weight: 500;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
 }
 
 .btn-primary:hover {
     background-color: #357abd;
     border-color: #357abd;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 12px rgba(74, 144, 226, 0.3);
 }
 
 .btn-primary:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(74, 144, 226, 0.2);
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
 }
 
 @media (max-width: 768px) {
