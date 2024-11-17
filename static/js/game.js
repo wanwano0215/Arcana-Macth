@@ -21,22 +21,43 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (audioInitialized) return;
         
         try {
-            const audio = new Audio('/static/sounds/flip.mp3');
+            // Create simple tone fallback
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
             
-            // Test if audio can be played
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Try loading MP3 first
+            const audio = new Audio('/static/sounds/card-flip.mp3');
+            
             await new Promise((resolve, reject) => {
-                audio.addEventListener('canplaythrough', resolve, { once: true });
-                audio.addEventListener('error', (e) => {
-                    reject(new Error(`Audio failed to load: ${e.target.error.message}`));
+                audio.addEventListener('canplaythrough', () => {
+                    window.cardFlipPlayer = audio;
+                    resolve();
                 }, { once: true });
+                
+                audio.addEventListener('error', async () => {
+                    // Fallback to simple tone if MP3 fails
+                    window.cardFlipPlayer = {
+                        play: async () => {
+                            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                            oscillator.start(audioContext.currentTime);
+                            oscillator.stop(audioContext.currentTime + 0.1);
+                        }
+                    };
+                    resolve();
+                }, { once: true });
+                
                 audio.load();
             });
             
-            window.cardFlipPlayer = audio;
             audioInitialized = true;
             console.log('Audio initialized successfully');
         } catch (error) {
-            console.error('Audio initialization failed:', error.message);
+            console.error('Audio initialization failed:', error);
             audioEnabled = false;
         }
     }
@@ -44,8 +65,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Cleanup function for audio resources
     function cleanupAudio() {
         if (window.cardFlipPlayer) {
-            window.cardFlipPlayer.pause();
-            window.cardFlipPlayer.src = '';
+            if (window.cardFlipPlayer.pause) {
+                window.cardFlipPlayer.pause();
+                window.cardFlipPlayer.src = '';
+            }
             window.cardFlipPlayer = null;
         }
         audioInitialized = false;
@@ -57,11 +80,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!audioEnabled || !window.cardFlipPlayer) return;
         
         try {
-            const sound = window.cardFlipPlayer.cloneNode();
-            sound.volume = 0.5;
-            await sound.play();
+            await window.cardFlipPlayer.play();
         } catch (error) {
-            console.error('Error playing card flip sound:', error.message);
+            console.error('Error playing card flip sound:', error);
             audioEnabled = false;
         }
     }
