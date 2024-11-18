@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     const FLIP_ANIMATION_DURATION = 600;
     const MATCH_DISPLAY_DURATION = 1000;
     
+    // Track flipped cards
+    let flippedCards = new Set();
+    
     // Audio state management
     let audioContext = null;
     let gainNode = null;
@@ -279,6 +282,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         try {
             const cardIndex = parseInt(card.dataset.index);
+            
+            // Add first-flip zoom animation if card hasn't been flipped before
+            if (!flippedCards.has(cardIndex)) {
+                card.classList.add('first-flip');
+                flippedCards.add(cardIndex);
+                // Remove the class after animation
+                setTimeout(() => {
+                    card.classList.remove('first-flip');
+                }, 1000);
+            }
+            
             const data = await makeRequestWithRetry(`/flip/${cardIndex}`, {
                 method: 'POST',
                 headers: {
@@ -344,6 +358,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     'Content-Type': 'application/json'
                 }
             });
+            
+            // Reset flipped cards tracking
+            flippedCards.clear();
             
             initializeBoard();
             updateScore(0);
