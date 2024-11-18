@@ -12,41 +12,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     const FLIP_ANIMATION_DURATION = 600;
     const MATCH_DISPLAY_DURATION = 1000;
     
-    // Track flipped cards
-    let flippedCards = new Set();
-    
     // Audio state management
     let audioContext = null;
     let gainNode = null;
-    let cardFlipSound = null;
-    let matchSound = null;
-    let bgmSound = null;
 
+    // Initialize audio context and gain node
     async function initializeAudio() {
-        if (audioContext) return;
-        
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             gainNode = audioContext.createGain();
+            gainNode.gain.value = 0.3; // 30% volume
             gainNode.connect(audioContext.destination);
-
-            // Load all sound files
-            const [cardFlipBuffer, matchBuffer, bgmBuffer] = await Promise.all([
-                fetch('/static/sounds/card_flip.mp3').then(r => r.arrayBuffer()),
-                fetch('/static/sounds/match.mp3').then(r => r.arrayBuffer()),
-                fetch('/static/sounds/BGM.mp3').then(r => r.arrayBuffer())
-            ]);
-
-            // Decode audio data
-            [cardFlipSound, matchSound, bgmSound] = await Promise.all([
-                audioContext.decodeAudioData(cardFlipBuffer),
-                audioContext.decodeAudioData(matchBuffer),
-                audioContext.decodeAudioData(bgmBuffer)
-            ]);
-
-            // Start BGM
-            playBGM();
-            
             console.log('Audio initialized successfully');
             return true;
         } catch (error) {
@@ -55,59 +31,60 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Play BGM in loop
-    function playBGM() {
-        if (!audioContext || !bgmSound) return;
-        
-        try {
-            const source = audioContext.createBufferSource();
-            source.buffer = bgmSound;
-            source.loop = true;
-            
-            const bgmGain = audioContext.createGain();
-            bgmGain.gain.value = 0.2; // 20% volume for BGM
-            
-            source.connect(bgmGain);
-            bgmGain.connect(audioContext.destination);
-            source.start(0);
-        } catch (error) {
-            console.error('Error playing BGM:', error);
-        }
-    }
-
-    // Update card flip sound
+    // Create and play card flip sound
     async function playCardFlipSound() {
-        if (!audioContext || !cardFlipSound) return;
-        
+        if (!audioContext) return;
+
         try {
-            const source = audioContext.createBufferSource();
-            source.buffer = cardFlipSound;
+            const oscillator = audioContext.createOscillator();
+            const metalGain = audioContext.createGain();
             
-            const soundGain = audioContext.createGain();
-            soundGain.gain.value = 0.5; // 50% volume for card flip
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
             
-            source.connect(soundGain);
-            soundGain.connect(audioContext.destination);
-            source.start(0);
+            metalGain.gain.setValueAtTime(0.5, audioContext.currentTime);
+            metalGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.connect(metalGain);
+            metalGain.connect(gainNode);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
         } catch (error) {
             console.error('Error playing card flip sound:', error);
         }
     }
 
-    // Update match sound
+    // Create and play match sound
     async function playMatchSound() {
-        if (!audioContext || !matchSound) return;
-        
+        if (!audioContext) return;
+
         try {
-            const source = audioContext.createBufferSource();
-            source.buffer = matchSound;
+            const oscillator1 = audioContext.createOscillator();
+            const oscillator2 = audioContext.createOscillator();
+            const matchGain = audioContext.createGain();
             
-            const soundGain = audioContext.createGain();
-            soundGain.gain.value = 0.3; // 30% volume for match sound
+            oscillator1.type = 'sine';
+            oscillator2.type = 'sine';
             
-            source.connect(soundGain);
-            soundGain.connect(audioContext.destination);
-            source.start(0);
+            oscillator1.frequency.setValueAtTime(600, audioContext.currentTime);
+            oscillator2.frequency.setValueAtTime(800, audioContext.currentTime);
+            
+            oscillator1.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.15);
+            oscillator2.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 0.15);
+            
+            matchGain.gain.setValueAtTime(0.5, audioContext.currentTime);
+            matchGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator1.connect(matchGain);
+            oscillator2.connect(matchGain);
+            matchGain.connect(gainNode);
+            
+            oscillator1.start();
+            oscillator2.start();
+            oscillator1.stop(audioContext.currentTime + 0.3);
+            oscillator2.stop(audioContext.currentTime + 0.3);
         } catch (error) {
             console.error('Error playing match sound:', error);
         }
@@ -282,17 +259,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         try {
             const cardIndex = parseInt(card.dataset.index);
-            
-            // Add first-flip zoom animation if card hasn't been flipped before
-            if (!flippedCards.has(cardIndex)) {
-                card.classList.add('first-flip');
-                flippedCards.add(cardIndex);
-                // Remove the class after animation
-                setTimeout(() => {
-                    card.classList.remove('first-flip');
-                }, 1000);
-            }
-            
             const data = await makeRequestWithRetry(`/flip/${cardIndex}`, {
                 method: 'POST',
                 headers: {
@@ -358,9 +324,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     'Content-Type': 'application/json'
                 }
             });
-            
-            // Reset flipped cards tracking
-            flippedCards.clear();
             
             initializeBoard();
             updateScore(0);

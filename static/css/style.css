@@ -1,22 +1,6 @@
 /* Import Noto Sans JP from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap');
 
-/* Add animation for first flip zoom */
-@keyframes firstFlipZoom {
-    0% { transform: scale(1); }
-    30% { transform: scale(1.5); }
-    70% { transform: scale(1.5); }
-    100% { transform: scale(1); }
-}
-
-.memory-card.first-flip .card-back {
-    animation: firstFlipZoom 1s ease-in-out;
-}
-
-.memory-card.first-flip .card-front {
-    animation: firstFlipZoom 1s ease-in-out;
-}
-
 body {
     font-family: 'Noto Sans JP', sans-serif;
     background-image: url('/static/images/background.png');
