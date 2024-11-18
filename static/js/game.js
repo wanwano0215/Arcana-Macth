@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     let audioContext = null;
     let cardFlipBuffer = null;
     let matchBuffer = null;
+    let bgmBuffer = null;
+    let bgmPlayer = null;
 
     // Initialize audio context and players
     async function initializeAudio() {
@@ -27,23 +29,26 @@ document.addEventListener('DOMContentLoaded', async function() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
             try {
-                // Load both sounds
-                const [flipResponse, matchResponse] = await Promise.all([
+                // Load all sounds including BGM
+                const [flipResponse, matchResponse, bgmResponse] = await Promise.all([
                     fetch('/static/sounds/card_flip.mp3'),
-                    fetch('/static/sounds/match.mp3')
+                    fetch('/static/sounds/match.mp3'),
+                    fetch('/static/sounds/BGM.mp3')
                 ]);
                 
-                if (!flipResponse.ok || !matchResponse.ok) 
+                if (!flipResponse.ok || !matchResponse.ok || !bgmResponse.ok) 
                     throw new Error('Failed to load audio files');
                 
-                const [flipArrayBuffer, matchArrayBuffer] = await Promise.all([
+                const [flipArrayBuffer, matchArrayBuffer, bgmArrayBuffer] = await Promise.all([
                     flipResponse.arrayBuffer(),
-                    matchResponse.arrayBuffer()
+                    matchResponse.arrayBuffer(),
+                    bgmResponse.arrayBuffer()
                 ]);
                 
-                [cardFlipBuffer, matchBuffer] = await Promise.all([
+                [cardFlipBuffer, matchBuffer, bgmBuffer] = await Promise.all([
                     audioContext.decodeAudioData(flipArrayBuffer),
-                    audioContext.decodeAudioData(matchArrayBuffer)
+                    audioContext.decodeAudioData(matchArrayBuffer),
+                    audioContext.decodeAudioData(bgmArrayBuffer)
                 ]);
                 
                 audioInitialized = true;
@@ -58,14 +63,48 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    function startBGM() {
+        if (!audioEnabled || !audioContext || !bgmBuffer) return;
+        
+        try {
+            if (bgmPlayer) {
+                bgmPlayer.stop();
+                bgmPlayer = null;
+            }
+            
+            bgmPlayer = audioContext.createBufferSource();
+            bgmPlayer.buffer = bgmBuffer;
+            bgmPlayer.loop = true;
+            
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 0.2; // 20% volume
+            
+            bgmPlayer.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            bgmPlayer.start(0);
+        } catch (error) {
+            console.error('Error playing BGM:', error);
+        }
+    }
+
+    function stopBGM() {
+        if (bgmPlayer) {
+            bgmPlayer.stop();
+            bgmPlayer = null;
+        }
+    }
+
     // Cleanup function for audio resources
     function cleanupAudio() {
+        stopBGM();
         if (audioContext) {
             audioContext.close();
             audioContext = null;
         }
         cardFlipBuffer = null;
         matchBuffer = null;
+        bgmBuffer = null;
         audioInitialized = false;
         audioEnabled = true;
     }
@@ -78,14 +117,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             const source = audioContext.createBufferSource();
             source.buffer = cardFlipBuffer;
             
-            // Add a gain node for volume control
             const gainNode = audioContext.createGain();
             gainNode.gain.value = 0.5; // 50% volume
             
             source.connect(gainNode);
             gainNode.connect(audioContext.destination);
             
-            // Start playback
             source.start(0);
         } catch (error) {
             console.error('Error playing card flip sound:', error);
@@ -102,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             source.buffer = matchBuffer;
             
             const gainNode = audioContext.createGain();
-            gainNode.gain.value = 0.3; // Reduced from 0.5 to 0.3 (30% volume)
+            gainNode.gain.value = 0.3; // 30% volume
             
             source.connect(gainNode);
             gainNode.connect(audioContext.destination);
@@ -321,6 +358,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (data.game_over) {
                         statusMessage.textContent = data.message;
                         statusMessage.classList.add('game-clear');
+                        stopBGM();
                     }
                 }
             } else {
@@ -354,6 +392,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             statusMessage.textContent = 'カードを2枚めくってください';
             statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
             statusMessage.classList.add('alert-info');
+            startBGM(); // Start BGM when new game starts
         } catch (error) {
             statusMessage.textContent = '新しいゲームを開始できませんでした';
             statusMessage.classList.add('alert-danger');
@@ -376,6 +415,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             await preloadImages();
             await initializeAudio();
+            startBGM(); // Start BGM when game initializes
         } catch (error) {
             // Silent fail for initialization
         }
