@@ -126,22 +126,10 @@ def index():
         if not recover_session():
             return jsonify({'error': 'Failed to initialize session'}), 500
         
-        logger.info("Landing page loaded successfully")
-        return render_template('landing.html')
-    except Exception as e:
-        logger.error(f"Error in landing route: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Failed to load landing page'}), 500
-
-@app.route('/game')
-def game():
-    try:
-        if not recover_session():
-            return jsonify({'error': 'Failed to initialize session'}), 500
-        
         logger.info("Game page loaded successfully")
         return render_template('game.html')
     except Exception as e:
-        logger.error(f"Error in game route: {str(e)}", exc_info=True)
+        logger.error(f"Error in index route: {str(e)}", exc_info=True)
         return jsonify({'error': 'Failed to initialize game'}), 500
 
 @app.route('/flip/<int:card_index>', methods=['POST'])
