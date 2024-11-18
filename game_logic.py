@@ -86,7 +86,7 @@ class GameState:
         
         if all(card['matched'] for card in self.cards):
             result['game_over'] = True
-            result['message'] = f'🎊 Game Clear! 🎊 Score: {self.player_score}'
+            result['message'] = '🎊 Game Clear! 🎊'
             
         return result
     
