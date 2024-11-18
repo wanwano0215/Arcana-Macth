@@ -32,8 +32,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             bgmGain.connect(audioContext.destination);
             
             const sfxGain = audioContext.createGain();
-            sfxGain.gain.value = 0.5; // 50% volume for sound effects
+            sfxGain.gain.value = 0.5; // 50% volume for card flip sound
             sfxGain.connect(audioContext.destination);
+
+            const matchGain = audioContext.createGain();
+            matchGain.gain.value = 0.3; // 30% volume for match sound
+            matchGain.connect(audioContext.destination);
             
             // Load all sound files
             const [cardFlipResponse, matchResponse, bgmResponse] = await Promise.all([
@@ -62,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 play: async () => {
                     const source = audioContext.createBufferSource();
                     source.buffer = matchBuffer;
-                    source.connect(sfxGain);
+                    source.connect(matchGain);  // Use matchGain instead of sfxGain
                     source.start(0);
                 }
             };
