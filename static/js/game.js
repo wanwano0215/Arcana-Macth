@@ -12,12 +12,42 @@ document.addEventListener('DOMContentLoaded', async function() {
     const FLIP_ANIMATION_DURATION = 600;
     const MATCH_DISPLAY_DURATION = 1000;
     
+    // Timer variables
+    let gameStartTime = null;
+    let timerInterval = null;
+    
     // Audio state management
     let cardFlipSound = null;
     let matchSound = null;
     let bgmPlayer = null;
     let audioContext = null;
     let audioInitialized = false;
+
+    // Timer functions
+    function startTimer() {
+        if (!gameStartTime) {
+            gameStartTime = Date.now();
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    function updateTimer() {
+        const timerDisplay = document.getElementById('timer-display');
+        if (!gameStartTime || !timerDisplay) return;
+        
+        const elapsedTime = Math.floor((Date.now() - gameStartTime) / 1000);
+        const minutes = Math.floor(elapsedTime / 60);
+        const seconds = elapsedTime % 60;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
 
     // Initialize audio context and gain node
     async function initializeAudio() {
@@ -66,7 +96,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 play: async () => {
                     const source = audioContext.createBufferSource();
                     source.buffer = matchBuffer;
-                    source.connect(matchGain);  // Use matchGain instead of sfxGain
+                    source.connect(matchGain);
                     source.start(0);
                 }
             };
@@ -299,6 +329,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 await flipCard(card, data.card_value);
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
+                    startTimer();  // Start timer on first card flip
                     statusMessage.textContent = data.message;
                     isProcessing = false;
                     return;
@@ -324,6 +355,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     }
 
                     if (data.game_over) {
+                        stopTimer();
                         statusMessage.textContent = data.message;
                         statusMessage.classList.add('game-clear');
                         cleanupAudio();
@@ -347,6 +379,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function startNewGame() {
         try {
+            stopTimer();
+            gameStartTime = null;
+            document.getElementById('timer-display').textContent = '00:00';
             statusMessage.textContent = '新しいゲームを開始中...';
             await makeRequestWithRetry('/new-game', {
                 method: 'POST',
