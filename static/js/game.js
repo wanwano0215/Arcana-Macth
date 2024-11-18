@@ -297,6 +297,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (data.game_over) {
                         statusMessage.textContent = data.message;
                         statusMessage.classList.add('game-clear');
+                        cleanupAudio();
                     }
                 }
             } else {
@@ -330,6 +331,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             statusMessage.textContent = 'カードを2枚めくってください';
             statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
             statusMessage.classList.add('alert-info');
+            cleanupAudio();  // Stop previous BGM
+            await initializeAudio();  // Start new BGM
         } catch (error) {
             statusMessage.textContent = '新しいゲームを開始できませんでした';
             statusMessage.classList.add('alert-danger');
