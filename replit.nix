@@ -1,7 +1,5 @@
 {pkgs}: {
   deps = [
-    pkgs.xsimd
-    pkgs.pkg-config
     pkgs.zlib
     pkgs.tk
     pkgs.tcl
