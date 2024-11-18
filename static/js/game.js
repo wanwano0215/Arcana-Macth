@@ -13,81 +13,106 @@ document.addEventListener('DOMContentLoaded', async function() {
     const MATCH_DISPLAY_DURATION = 1000;
     
     // Audio state management
+    let cardFlipSound = null;
+    let matchSound = null;
+    let bgmPlayer = null;
     let audioContext = null;
-    let gainNode = null;
+    let audioInitialized = false;
 
     // Initialize audio context and gain node
     async function initializeAudio() {
+        if (audioInitialized) return;
+        
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            gainNode = audioContext.createGain();
-            gainNode.gain.value = 0.3; // 30% volume
-            gainNode.connect(audioContext.destination);
+            
+            // Create gain nodes for different volume levels
+            const bgmGain = audioContext.createGain();
+            bgmGain.gain.value = 0.2; // 20% volume for BGM
+            bgmGain.connect(audioContext.destination);
+            
+            const sfxGain = audioContext.createGain();
+            sfxGain.gain.value = 0.5; // 50% volume for sound effects
+            sfxGain.connect(audioContext.destination);
+            
+            // Load all sound files
+            const [cardFlipResponse, matchResponse, bgmResponse] = await Promise.all([
+                fetch('/static/sounds/card_flip.mp3'),
+                fetch('/static/sounds/match.mp3'),
+                fetch('/static/sounds/BGM.mp3')
+            ]);
+            
+            const [cardFlipBuffer, matchBuffer, bgmBuffer] = await Promise.all([
+                audioContext.decodeAudioData(await cardFlipResponse.arrayBuffer()),
+                audioContext.decodeAudioData(await matchResponse.arrayBuffer()),
+                audioContext.decodeAudioData(await bgmResponse.arrayBuffer())
+            ]);
+            
+            // Create audio players
+            cardFlipSound = {
+                play: async () => {
+                    const source = audioContext.createBufferSource();
+                    source.buffer = cardFlipBuffer;
+                    source.connect(sfxGain);
+                    source.start(0);
+                }
+            };
+            
+            matchSound = {
+                play: async () => {
+                    const source = audioContext.createBufferSource();
+                    source.buffer = matchBuffer;
+                    source.connect(sfxGain);
+                    source.start(0);
+                }
+            };
+            
+            // Setup BGM with loop
+            const bgmSource = audioContext.createBufferSource();
+            bgmSource.buffer = bgmBuffer;
+            bgmSource.loop = true;
+            bgmSource.connect(bgmGain);
+            bgmSource.start(0);
+            bgmPlayer = bgmSource;
+            
+            audioInitialized = true;
             console.log('Audio initialized successfully');
-            return true;
         } catch (error) {
             console.error('Audio initialization failed:', error);
-            return false;
+            audioInitialized = false;
         }
     }
 
-    // Create and play card flip sound
+    // Audio playback functions
     async function playCardFlipSound() {
-        if (!audioContext) return;
-
+        if (!audioInitialized || !cardFlipSound) return;
         try {
-            const oscillator = audioContext.createOscillator();
-            const metalGain = audioContext.createGain();
-            
-            oscillator.type = 'triangle';
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
-            
-            metalGain.gain.setValueAtTime(0.5, audioContext.currentTime);
-            metalGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-            
-            oscillator.connect(metalGain);
-            metalGain.connect(gainNode);
-            
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + 0.1);
+            await cardFlipSound.play();
         } catch (error) {
             console.error('Error playing card flip sound:', error);
         }
     }
 
-    // Create and play match sound
     async function playMatchSound() {
-        if (!audioContext) return;
-
+        if (!audioInitialized || !matchSound) return;
         try {
-            const oscillator1 = audioContext.createOscillator();
-            const oscillator2 = audioContext.createOscillator();
-            const matchGain = audioContext.createGain();
-            
-            oscillator1.type = 'sine';
-            oscillator2.type = 'sine';
-            
-            oscillator1.frequency.setValueAtTime(600, audioContext.currentTime);
-            oscillator2.frequency.setValueAtTime(800, audioContext.currentTime);
-            
-            oscillator1.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.15);
-            oscillator2.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 0.15);
-            
-            matchGain.gain.setValueAtTime(0.5, audioContext.currentTime);
-            matchGain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-            
-            oscillator1.connect(matchGain);
-            oscillator2.connect(matchGain);
-            matchGain.connect(gainNode);
-            
-            oscillator1.start();
-            oscillator2.start();
-            oscillator1.stop(audioContext.currentTime + 0.3);
-            oscillator2.stop(audioContext.currentTime + 0.3);
+            await matchSound.play();
         } catch (error) {
             console.error('Error playing match sound:', error);
         }
+    }
+
+    // Cleanup function for audio resources
+    function cleanupAudio() {
+        if (bgmPlayer) {
+            bgmPlayer.stop();
+            bgmPlayer = null;
+        }
+        if (audioContext) {
+            audioContext.close();
+            audioContext = null;
+        }
+        audioInitialized = false;
     }
 
     // Map card values to their corresponding image names
@@ -331,8 +356,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             statusMessage.textContent = 'カードを2枚めくってください';
             statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
             statusMessage.classList.add('alert-info');
-            cleanupAudio();  // Stop previous BGM
-            await initializeAudio();  // Start new BGM
+            cleanupAudio();  // Stop previous audio
+            await initializeAudio();  // Initialize new audio
         } catch (error) {
             statusMessage.textContent = '新しいゲームを開始できませんでした';
             statusMessage.classList.add('alert-danger');
