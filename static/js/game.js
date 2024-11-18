@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             source.buffer = matchBuffer;
             
             const gainNode = audioContext.createGain();
-            gainNode.gain.value = 0.5; // 50% volume
+            gainNode.gain.value = 0.3; // Reduced from 0.5 to 0.3 (30% volume)
             
             source.connect(gainNode);
             gainNode.connect(audioContext.destination);
