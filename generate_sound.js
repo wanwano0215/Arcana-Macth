@@ -1,97 +1,61 @@
-const Tone = require('tone');
-const fs = require('fs');
+import * as Tone from 'tone';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 async function generateSounds() {
     // Create audio context
-    const audioContext = new (Tone.Context)();
+    const audioContext = new Tone.Context();
     
-    // Create card flip sound
-    const cardFlipOsc = new Tone.Oscillator({
-        type: 'triangle',
-        frequency: 800,
+    // Create card flip sound with metallic characteristics
+    const cardFlipSynth = new Tone.MetalSynth({
+        frequency: 200,
+        envelope: {
+            attack: 0.001,
+            decay: 0.1,
+            release: 0.1
+        },
+        harmonicity: 5.1,
+        modulationIndex: 32,
+        resonance: 4000,
+        octaves: 1.5
     }).toDestination();
-    
-    const cardFlipEnv = new Tone.AmplitudeEnvelope({
-        attack: 0.01,
-        decay: 0.1,
-        sustain: 0,
-        release: 0.1
-    }).toDestination();
-    
-    cardFlipOsc.connect(cardFlipEnv);
-    
-    // Create match sound
-    const matchOsc1 = new Tone.Oscillator({
-        type: 'sine',
-        frequency: 600,
-    }).toDestination();
-    
-    const matchOsc2 = new Tone.Oscillator({
-        type: 'sine',
-        frequency: 800,
-    }).toDestination();
-    
-    const matchEnv = new Tone.AmplitudeEnvelope({
-        attack: 0.01,
-        decay: 0.3,
-        sustain: 0,
-        release: 0.2
-    }).toDestination();
-    
-    matchOsc1.connect(matchEnv);
-    matchOsc2.connect(matchEnv);
-    
-    // Create BGM
-    const bgmSynth = new Tone.PolySynth(Tone.Synth).toDestination();
-    const bgmPart = new Tone.Part(((time) => {
-        bgmSynth.triggerAttackRelease('C4', '8n', time);
-        bgmSynth.triggerAttackRelease('E4', '8n', time + 0.5);
-        bgmSynth.triggerAttackRelease('G4', '8n', time + 1);
-    }), [0]).start(0);
-    
-    // Record and save sounds
-    const recorder = new Tone.Recorder();
+
+    // Create match sound with pleasant harmonics
+    const matchSynth = new Tone.PolySynth(Tone.Synth).toDestination();
     
     // Ensure directory exists
-    if (!fs.existsSync('static/sounds')) {
-        fs.mkdirSync('static/sounds', { recursive: true });
+    if (!existsSync('static/sounds')) {
+        mkdirSync('static/sounds', { recursive: true });
     }
     
+    // Create recorder
+    const recorder = new Tone.Recorder();
+    
     // Record card flip sound
-    cardFlipOsc.connect(recorder);
+    cardFlipSynth.connect(recorder);
     await recorder.start();
-    cardFlipEnv.triggerAttackRelease(0.1);
+    cardFlipSynth.triggerAttackRelease("C4", "32n");
+    await new Promise(resolve => setTimeout(resolve, 500));
     const cardFlipBlob = await recorder.stop();
-    const cardFlipBuffer = await cardFlipBlob.arrayBuffer();
-    fs.writeFileSync('static/sounds/card_flip.mp3', Buffer.from(cardFlipBuffer));
+    writeFileSync('static/sounds/card_flip.mp3', Buffer.from(await cardFlipBlob.arrayBuffer()));
     
     // Record match sound
-    matchOsc1.connect(recorder);
-    matchOsc2.connect(recorder);
+    matchSynth.connect(recorder);
     await recorder.start();
-    matchEnv.triggerAttackRelease(0.3);
+    matchSynth.triggerAttackRelease(["C4", "E4", "G4"], "8n");
+    await new Promise(resolve => setTimeout(resolve, 1000));
     const matchBlob = await recorder.stop();
-    const matchBuffer = await matchBlob.arrayBuffer();
-    fs.writeFileSync('static/sounds/match.mp3', Buffer.from(matchBuffer));
-    
-    // Record BGM
-    bgmSynth.connect(recorder);
-    await recorder.start();
-    Tone.Transport.start();
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    const bgmBlob = await recorder.stop();
-    const bgmBuffer = await bgmBlob.arrayBuffer();
-    fs.writeFileSync('static/sounds/BGM.mp3', Buffer.from(bgmBuffer));
+    writeFileSync('static/sounds/match.mp3', Buffer.from(await matchBlob.arrayBuffer()));
     
     // Cleanup
-    cardFlipOsc.dispose();
-    matchOsc1.dispose();
-    matchOsc2.dispose();
-    cardFlipEnv.dispose();
-    matchEnv.dispose();
-    bgmSynth.dispose();
-    bgmPart.dispose();
+    cardFlipSynth.dispose();
+    matchSynth.dispose();
     recorder.dispose();
+    await audioContext.close();
 }
 
 generateSounds().then(() => {

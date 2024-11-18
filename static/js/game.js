@@ -15,11 +15,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Audio state management
     let cardFlipSound = null;
     let matchSound = null;
-    let bgmPlayer = null;
     let audioContext = null;
     let audioInitialized = false;
 
-    // Initialize audio context and gain node
+    // Initialize audio context and load sounds
     async function initializeAudio() {
         if (audioInitialized) return;
         
@@ -27,10 +26,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
             // Create gain nodes for different volume levels
-            const bgmGain = audioContext.createGain();
-            bgmGain.gain.value = 0.2; // 20% volume for BGM
-            bgmGain.connect(audioContext.destination);
-            
             const sfxGain = audioContext.createGain();
             sfxGain.gain.value = 0.5; // 50% volume for card flip sound
             sfxGain.connect(audioContext.destination);
@@ -39,22 +34,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             matchGain.gain.value = 0.3; // 30% volume for match sound
             matchGain.connect(audioContext.destination);
             
-            // Load all sound files
-            const [cardFlipResponse, matchResponse, bgmResponse] = await Promise.all([
-                fetch('/static/sounds/card_flip.mp3'),
-                fetch('/static/sounds/match.mp3'),
-                fetch('/static/sounds/BGM.mp3')
-            ]);
-            
-            const [cardFlipBuffer, matchBuffer, bgmBuffer] = await Promise.all([
-                audioContext.decodeAudioData(await cardFlipResponse.arrayBuffer()),
-                audioContext.decodeAudioData(await matchResponse.arrayBuffer()),
-                audioContext.decodeAudioData(await bgmResponse.arrayBuffer())
+            // Load sound files
+            const [cardFlipBuffer, matchBuffer] = await Promise.all([
+                fetch('/static/sounds/card_flip.mp3')
+                    .then(response => response.arrayBuffer())
+                    .then(buffer => audioContext.decodeAudioData(buffer)),
+                fetch('/static/sounds/match.mp3')
+                    .then(response => response.arrayBuffer())
+                    .then(buffer => audioContext.decodeAudioData(buffer))
             ]);
             
             // Create audio players
             cardFlipSound = {
-                play: async () => {
+                play: () => {
                     const source = audioContext.createBufferSource();
                     source.buffer = cardFlipBuffer;
                     source.connect(sfxGain);
@@ -63,21 +55,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
             
             matchSound = {
-                play: async () => {
+                play: () => {
                     const source = audioContext.createBufferSource();
                     source.buffer = matchBuffer;
-                    source.connect(matchGain);  // Use matchGain instead of sfxGain
+                    source.connect(matchGain);
                     source.start(0);
                 }
             };
-            
-            // Setup BGM with loop
-            const bgmSource = audioContext.createBufferSource();
-            bgmSource.buffer = bgmBuffer;
-            bgmSource.loop = true;
-            bgmSource.connect(bgmGain);
-            bgmSource.start(0);
-            bgmPlayer = bgmSource;
             
             audioInitialized = true;
             console.log('Audio initialized successfully');
@@ -91,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function playCardFlipSound() {
         if (!audioInitialized || !cardFlipSound) return;
         try {
-            await cardFlipSound.play();
+            cardFlipSound.play();
         } catch (error) {
             console.error('Error playing card flip sound:', error);
         }
@@ -100,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function playMatchSound() {
         if (!audioInitialized || !matchSound) return;
         try {
-            await matchSound.play();
+            matchSound.play();
         } catch (error) {
             console.error('Error playing match sound:', error);
         }
@@ -108,10 +92,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Cleanup function for audio resources
     function cleanupAudio() {
-        if (bgmPlayer) {
-            bgmPlayer.stop();
-            bgmPlayer = null;
-        }
         if (audioContext) {
             audioContext.close();
             audioContext = null;
