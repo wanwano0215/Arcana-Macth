@@ -21,6 +21,29 @@ body {
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
+.landing-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: rgba(245, 245, 245, 0.85);
+}
+
+.landing-content {
+    padding: 2rem;
+}
+
+.start-button {
+    font-size: 1.5rem;
+    padding: 1rem 3rem;
+    transition: all 0.3s ease;
+}
+
+.start-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
 .logo-container {
     margin-bottom: 2rem;
     padding: 1rem;
