@@ -8,8 +8,8 @@ class GameState:
         self.first_card: Optional[int] = None
         
     def _create_cards(self) -> List[Dict[str, Any]]:
-        # Create pairs of cards (1-22, each appears twice)
-        values = list(range(1, 23)) * 2
+        # Create pairs of cards (0-21, each appears twice)
+        values = list(range(0, 22)) * 2  # Changed from range(1, 23)
         random.shuffle(values)
         return [{'value': v, 'flipped': False, 'matched': False} for v in values]
     

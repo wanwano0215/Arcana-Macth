@@ -122,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         3: '3女帝',
         4: '4皇帝',
         5: '5教皇',
+        6: '6恋人',
         7: '7戦車',
         8: '8力',
         9: '9隠者',
