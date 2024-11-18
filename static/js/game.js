@@ -17,26 +17,39 @@ document.addEventListener('DOMContentLoaded', async function() {
     let audioEnabled = true;
     let audioContext = null;
     let cardFlipBuffer = null;
+    let matchBuffer = null;
 
     // Initialize audio context and players
     async function initializeAudio() {
         if (audioInitialized) return;
         
         try {
-            // Initialize Web Audio API context
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
             try {
-                const response = await fetch('/static/sounds/card_flip.mp3');
-                if (!response.ok) throw new Error('Failed to load audio file');
+                // Load both sounds
+                const [flipResponse, matchResponse] = await Promise.all([
+                    fetch('/static/sounds/card_flip.mp3'),
+                    fetch('/static/sounds/match.mp3')
+                ]);
                 
-                const arrayBuffer = await response.arrayBuffer();
-                cardFlipBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                if (!flipResponse.ok || !matchResponse.ok) 
+                    throw new Error('Failed to load audio files');
+                
+                const [flipArrayBuffer, matchArrayBuffer] = await Promise.all([
+                    flipResponse.arrayBuffer(),
+                    matchResponse.arrayBuffer()
+                ]);
+                
+                [cardFlipBuffer, matchBuffer] = await Promise.all([
+                    audioContext.decodeAudioData(flipArrayBuffer),
+                    audioContext.decodeAudioData(matchArrayBuffer)
+                ]);
                 
                 audioInitialized = true;
                 console.log('Audio initialized successfully');
             } catch (error) {
-                console.error('Failed to load audio file:', error);
+                console.error('Failed to load audio files:', error);
                 audioEnabled = false;
             }
         } catch (error) {
@@ -52,6 +65,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             audioContext = null;
         }
         cardFlipBuffer = null;
+        matchBuffer = null;
         audioInitialized = false;
         audioEnabled = true;
     }
@@ -75,6 +89,27 @@ document.addEventListener('DOMContentLoaded', async function() {
             source.start(0);
         } catch (error) {
             console.error('Error playing card flip sound:', error);
+            audioEnabled = false;
+        }
+    }
+
+    // Match sound playback
+    async function playMatchSound() {
+        if (!audioEnabled || !audioContext || !matchBuffer) return;
+        
+        try {
+            const source = audioContext.createBufferSource();
+            source.buffer = matchBuffer;
+            
+            const gainNode = audioContext.createGain();
+            gainNode.gain.value = 0.5; // 50% volume
+            
+            source.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            source.start(0);
+        } catch (error) {
+            console.error('Error playing match sound:', error);
             audioEnabled = false;
         }
     }
@@ -270,6 +305,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         markAsMatched(card);
                         markAsMatched(firstCard);
                         updateScore(data.player_score);
+                        await playMatchSound();
                         statusMessage.textContent = '🎉 Match! 🎉';
                     } else {
                         await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
