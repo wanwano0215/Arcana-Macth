@@ -53,38 +53,64 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function initializeAudio() {
         if (audioInitialized) return;
         
+        const loadAudio = async (url, volume = 0.3) => {
+            const audio = new Audio(url);
+            audio.volume = volume;
+            
+            try {
+                await new Promise((resolve, reject) => {
+                    const loadHandler = () => {
+                        audio.removeEventListener('canplaythrough', loadHandler);
+                        audio.removeEventListener('error', errorHandler);
+                        resolve();
+                    };
+                    const errorHandler = (e) => {
+                        audio.removeEventListener('canplaythrough', loadHandler);
+                        audio.removeEventListener('error', errorHandler);
+                        reject(new Error(`Failed to load audio: ${url}`));
+                    };
+                    audio.addEventListener('canplaythrough', loadHandler);
+                    audio.addEventListener('error', errorHandler);
+                    audio.load();
+                });
+                return audio;
+            } catch (error) {
+                console.error(`Failed to load audio ${url}:`, error);
+                return null;
+            }
+        };
+        
         try {
-            // Create audio elements with proper error handling
-            cardFlipSound = new Audio('/static/sounds/card_flip.mp3');
-            cardFlipSound.volume = 0.3;  // Increased from 0.2 to 0.3
+            console.log('Loading audio files...');
             
-            // Wait for the sound to be loaded
-            await new Promise((resolve, reject) => {
-                cardFlipSound.addEventListener('canplaythrough', resolve);
-                cardFlipSound.addEventListener('error', reject);
-                cardFlipSound.load();
-            });
+            // Load all audio files in parallel
+            const [cardFlipAudio, matchAudio, bgmAudio] = await Promise.all([
+                loadAudio('/static/sounds/card_flip.mp3', 0.3),
+                loadAudio('/static/sounds/match.mp3', 0.3),
+                loadAudio('/static/sounds/BGM.mp3', 0.1)
+            ]);
             
-            matchSound = new Audio('/static/sounds/match.mp3');
-            matchSound.volume = 0.3;  // Reduced from 0.4 to 0.3
+            // Verify all audio files loaded successfully
+            if (!cardFlipAudio || !matchAudio || !bgmAudio) {
+                throw new Error('Some audio files failed to load');
+            }
             
-            bgmPlayer = new Audio('/static/sounds/BGM.mp3');
-            bgmPlayer.volume = 0.1;  // Reduced from 0.15
+            cardFlipSound = cardFlipAudio;
+            matchSound = matchAudio;
+            bgmPlayer = bgmAudio;
             bgmPlayer.loop = true;
             
-            // Ensure BGM is properly loaded before attempting playback
-            await new Promise((resolve, reject) => {
-                bgmPlayer.addEventListener('canplaythrough', resolve);
-                bgmPlayer.addEventListener('error', reject);
-                bgmPlayer.load();
+            console.log('Audio elements created:', {
+                cardFlipSound: !!cardFlipSound,
+                matchSound: !!matchSound,
+                bgmPlayer: !!bgmPlayer
             });
             
             // Start BGM after initialization
             try {
                 await bgmPlayer.play();
             } catch (error) {
-                console.error('BGM playback failed:', error);
-                // Silent fail to not disrupt gameplay
+                console.warn('BGM autoplay failed, will try on user interaction:', error);
             }
             
             audioInitialized = true;
@@ -92,6 +118,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } catch (error) {
             console.error('Audio initialization failed:', error);
             audioInitialized = false;
+            throw new Error('Audio initialization failed');
         }
     }
 
@@ -245,8 +272,18 @@ document.addEventListener('DOMContentLoaded', async function() {
             overlay.classList.add('active');
         });
         
-        // Add click handler to close when clicking either the overlay or the card
-        const closeEnlarged = (e) => {
+        // Add auto-close timer
+        const autoCloseTimer = setTimeout(() => {
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                container.innerHTML = '';
+            }, 300);
+        }, 2000); // Close after 2 seconds
+        
+        // Clear timer if user clicks to close early
+        overlay.onclick = (e) => {
+            clearTimeout(autoCloseTimer);
             if (e.target === overlay || e.target.closest('.enlarged-card')) {
                 overlay.classList.remove('active');
                 setTimeout(() => {
@@ -255,8 +292,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }, 300);
             }
         };
-        
-        overlay.onclick = closeEnlarged;
     }
 
     async function unflipCard(card) {
