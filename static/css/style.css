@@ -296,7 +296,7 @@ body {
 }
 
 .enlarged-card {
-    transform: scale(10);
+    transform: scale(5);  /* Changed from scale(10) to scale(5) */
     transition: transform 0.3s ease-in-out;
 }
 
