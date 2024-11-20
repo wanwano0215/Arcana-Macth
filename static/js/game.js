@@ -236,22 +236,36 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Only show enlarged view if card is flipped
         if (!card.classList.contains('flipped')) return;
         
-        const clone = card.cloneNode(true);
-        clone.classList.add('enlarged-card');
+        // Create a new card element for the enlarged view
+        const enlargedCard = document.createElement('div');
+        enlargedCard.className = 'memory-card enlarged-card';
         
+        // Copy the inner content from the original card
+        const cardInner = card.querySelector('.card-inner').cloneNode(true);
+        enlargedCard.appendChild(cardInner);
+        
+        // Clear previous content and add new enlarged card
         container.innerHTML = '';
-        container.appendChild(clone);
+        container.appendChild(enlargedCard);
         
-        // Force a reflow before adding active class
+        // Show overlay
+        overlay.style.display = 'flex';
+        // Force reflow
         overlay.offsetHeight;
         overlay.classList.add('active');
         
-        overlay.onclick = () => {
-            overlay.classList.remove('active');
-            setTimeout(() => {
-                container.innerHTML = '';
-            }, 300);
+        // Add click handler to close
+        const closeEnlarged = (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    container.innerHTML = '';
+                }, 300);
+            }
         };
+        
+        overlay.onclick = closeEnlarged;
     }
 
     async function unflipCard(card) {
