@@ -1,5 +1,5 @@
-const { Context, Recorder, MetalSynth, PolySynth, Synth } = require('tone');
-const { writeFileSync, mkdirSync, existsSync } = require('fs');
+import { Context, Recorder, MetalSynth, PolySynth, Synth } from 'tone';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
 
 async function generateSounds() {
     // Create audio context
