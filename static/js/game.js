@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             // Create audio elements with proper error handling
             cardFlipSound = new Audio('/static/sounds/card_flip.mp3');
-            cardFlipSound.volume = 0.2;
+            cardFlipSound.volume = 0.3;  // Increased from 0.2 to 0.3
             
             // Wait for the sound to be loaded
             await new Promise((resolve, reject) => {
@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             // Create a new instance for each play to handle rapid clicks
             const sound = cardFlipSound.cloneNode();
-            sound.volume = 0.2;
+            sound.volume = 0.3;  // Increased from 0.2 to 0.3
             await sound.play();
         } catch (error) {
             console.error('Error playing card flip sound:', error);
