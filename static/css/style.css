@@ -270,6 +270,10 @@ body {
     }
 }
 
+.alert.alert-warning {
+    position: relative;
+    z-index: 100;
+}
 /* Enlarged card view styles */
 .enlarged-card-overlay {
     position: fixed;
