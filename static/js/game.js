@@ -55,39 +55,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         try {
             // Create audio elements with proper error handling
-            cardFlipSound = new Audio();
-            cardFlipSound.src = '/static/sounds/card_flip.mp3';
+            cardFlipSound = new Audio('/static/sounds/card_flip.mp3');
             cardFlipSound.volume = 0.2;
             
-            matchSound = new Audio();
-            matchSound.src = '/static/sounds/match.mp3';
+            matchSound = new Audio('/static/sounds/match.mp3');
             matchSound.volume = 0.3;
             
-            bgmPlayer = new Audio();
-            bgmPlayer.src = '/static/sounds/BGM.mp3';
+            bgmPlayer = new Audio('/static/sounds/BGM.mp3');
             bgmPlayer.volume = 0.2;
             bgmPlayer.loop = true;
             
-            // Ensure audio files are loaded before playing
-            await Promise.all([
-                new Promise((resolve, reject) => {
-                    cardFlipSound.addEventListener('canplaythrough', resolve);
-                    cardFlipSound.addEventListener('error', reject);
-                }),
-                new Promise((resolve, reject) => {
-                    matchSound.addEventListener('canplaythrough', resolve);
-                    matchSound.addEventListener('error', reject);
-                }),
-                new Promise((resolve, reject) => {
-                    bgmPlayer.addEventListener('canplaythrough', resolve);
-                    bgmPlayer.addEventListener('error', reject);
-                })
-            ]);
-            
             // Start BGM only after loading
-            await bgmPlayer.play();
+            await bgmPlayer.play().catch(error => {
+                console.error('BGM playback failed:', error);
+                // Silent fail to not disrupt gameplay
+            });
             
             audioInitialized = true;
+            console.log('Audio elements created:', {
+                cardFlipSound: !!cardFlipSound,
+                matchSound: !!matchSound,
+                bgmPlayer: !!bgmPlayer
+            });
             console.log('Audio initialized successfully');
         } catch (error) {
             console.error('Audio initialization failed:', error);
