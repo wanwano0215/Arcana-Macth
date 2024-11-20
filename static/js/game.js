@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
                     startTimer();  // Start timer on first card flip
-                    statusMessage.textContent = data.message;
+                    statusMessage.innerHTML = `${data.message}<br><small>※ カード拡大時は画面の任意の場所をクリックすると元の表示に戻ります</small>`;
                     isProcessing = false;
                     return;
                 }
@@ -387,7 +387,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         markAsMatched(firstCard);
                         updateScore(data.player_score);
                         await playMatchSound();
-                        statusMessage.textContent = '🎉 Match! 🎉';
+                        statusMessage.innerHTML = '🎉 Match! 🎉<br><small>※ カード拡大時は画面の任意の場所をクリックすると元の表示に戻ります</small>';
                     } else {
                         await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
