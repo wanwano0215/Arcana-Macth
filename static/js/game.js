@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             matchSound.volume = 0.4;  // Increased from 0.3
             
             bgmPlayer = new Audio('/static/sounds/BGM.mp3');
-            bgmPlayer.volume = 0.15;  // Reduced from 0.2
+            bgmPlayer.volume = 0.1;  // Reduced from 0.15
             bgmPlayer.loop = true;
             
             // Ensure BGM is properly loaded before attempting playback
