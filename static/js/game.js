@@ -56,20 +56,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             
-            // Create gain nodes for different volume levels
+            // Create gain nodes with specified volumes
             const bgmGain = audioContext.createGain();
-            bgmGain.gain.value = 0.2; // 20% volume for BGM
+            bgmGain.gain.value = 0.2;  // 20% volume for BGM
             bgmGain.connect(audioContext.destination);
             
-            const sfxGain = audioContext.createGain();
-            sfxGain.gain.value = 0.5; // 50% volume for card flip sound
-            sfxGain.connect(audioContext.destination);
+            const cardFlipGain = audioContext.createGain();
+            cardFlipGain.gain.value = 0.2;  // 20% volume for card flip
+            cardFlipGain.connect(audioContext.destination);
 
             const matchGain = audioContext.createGain();
-            matchGain.gain.value = 0.3; // 30% volume for match sound
+            matchGain.gain.value = 0.3;  // 30% volume for match sound
             matchGain.connect(audioContext.destination);
             
-            // Load all sound files
+            // Load sound files
             const [cardFlipResponse, matchResponse, bgmResponse] = await Promise.all([
                 fetch('/static/sounds/card_flip.mp3'),
                 fetch('/static/sounds/match.mp3'),
@@ -82,12 +82,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 audioContext.decodeAudioData(await bgmResponse.arrayBuffer())
             ]);
             
-            // Create audio players
+            // Set up audio players with proper gain nodes
             cardFlipSound = {
                 play: async () => {
                     const source = audioContext.createBufferSource();
                     source.buffer = cardFlipBuffer;
-                    source.connect(sfxGain);
+                    source.connect(cardFlipGain);
                     source.start(0);
                 }
             };
@@ -114,6 +114,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } catch (error) {
             console.error('Audio initialization failed:', error);
             audioInitialized = false;
+            throw error; // Rethrow the error for proper error handling
         }
     }
 
