@@ -232,18 +232,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     function showEnlargedCard(card) {
         const overlay = document.getElementById('enlarged-card-overlay');
         const container = overlay.querySelector('.enlarged-card-container');
+        
+        // Only show enlarged view if card is flipped
+        if (!card.classList.contains('flipped')) return;
+        
         const clone = card.cloneNode(true);
         clone.classList.add('enlarged-card');
         
         container.innerHTML = '';
         container.appendChild(clone);
+        
+        // Force a reflow before adding active class
+        overlay.offsetHeight;
         overlay.classList.add('active');
         
         overlay.onclick = () => {
             overlay.classList.remove('active');
             setTimeout(() => {
                 container.innerHTML = '';
-            }, 300); // Wait for fade out animation
+            }, 300);
         };
     }
 

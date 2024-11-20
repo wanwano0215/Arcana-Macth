@@ -282,24 +282,33 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
 }
 
 .enlarged-card-overlay.active {
     display: flex;
+    opacity: 1;
 }
 
 .enlarged-card-container {
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.3s ease-in-out;
+    perspective: 1000px;
 }
 
 .enlarged-card {
-    transform: scale(5);  /* Changed from scale(10) to scale(5) */
+    transform: scale(5);
     transition: transform 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+.enlarged-card .card-inner {
+    transform: rotateY(180deg);
 }
 
 .enlarged-card .card-img {
     box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+    width: 100%;
+    height: auto;
 }
