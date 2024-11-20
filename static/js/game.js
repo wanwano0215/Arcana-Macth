@@ -106,12 +106,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 bgmPlayer: !!bgmPlayer
             });
             
-            // Start BGM after initialization
-            try {
-                await bgmPlayer.play();
-            } catch (error) {
-                console.warn('BGM autoplay failed, will try on user interaction:', error);
-            }
+            // Set up BGM to start on first user interaction
+            document.addEventListener('click', async function bgmInitHandler() {
+                try {
+                    if (bgmPlayer && !bgmPlayer.playing) {
+                        bgmPlayer.volume = 0.1; // Set initial volume to 10%
+                        await bgmPlayer.play();
+                        document.removeEventListener('click', bgmInitHandler);
+                        console.log('BGM started successfully');
+                    }
+                } catch (error) {
+                    console.warn('BGM playback failed:', error);
+                }
+            }, { once: false });
             
             audioInitialized = true;
             console.log('Audio initialized successfully');
@@ -151,20 +158,33 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Cleanup function for audio resources
     function cleanupAudio() {
-        if (bgmPlayer) {
-            bgmPlayer.pause();
-            bgmPlayer.currentTime = 0;
-            bgmPlayer = null;
+        try {
+            if (bgmPlayer) {
+                bgmPlayer.pause();
+                bgmPlayer.currentTime = 0;
+                // Fade out BGM
+                const fadeOut = setInterval(() => {
+                    if (bgmPlayer.volume > 0.01) {
+                        bgmPlayer.volume = Math.max(0, bgmPlayer.volume - 0.05);
+                    } else {
+                        clearInterval(fadeOut);
+                        bgmPlayer = null;
+                    }
+                }, 50);
+            }
+            if (cardFlipSound) {
+                cardFlipSound.pause();
+                cardFlipSound = null;
+            }
+            if (matchSound) {
+                matchSound.pause();
+                matchSound = null;
+            }
+            audioInitialized = false;
+            console.log('Audio cleanup completed');
+        } catch (error) {
+            console.error('Error during audio cleanup:', error);
         }
-        if (cardFlipSound) {
-            cardFlipSound.pause();
-            cardFlipSound = null;
-        }
-        if (matchSound) {
-            matchSound.pause();
-            matchSound = null;
-        }
-        audioInitialized = false;
     }
 
     // Map card values to their corresponding image names
