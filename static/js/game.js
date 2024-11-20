@@ -72,6 +72,21 @@ document.addEventListener('DOMContentLoaded', async function() {
             bgmPlayer.volume = 0.2;
             bgmPlayer.loop = true;
             
+            // Ensure BGM is properly loaded before attempting playback
+            await new Promise((resolve, reject) => {
+                bgmPlayer.addEventListener('canplaythrough', resolve);
+                bgmPlayer.addEventListener('error', reject);
+                bgmPlayer.load();
+            });
+            
+            // Start BGM after initialization
+            try {
+                await bgmPlayer.play();
+            } catch (error) {
+                console.error('BGM playback failed:', error);
+                // Silent fail to not disrupt gameplay
+            }
+            
             audioInitialized = true;
             console.log('Audio initialized successfully');
         } catch (error) {
