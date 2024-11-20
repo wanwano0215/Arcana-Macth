@@ -1,20 +1,20 @@
-import { Context, Recorder, MetalSynth, PolySynth, Synth } from 'tone';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
+const Tone = require('tone');
+const fs = require('fs');
 
 async function generateSounds() {
     // Create audio context
-    const context = new Context();
+    const context = new Tone.Context();
     
     // Ensure directory exists
-    if (!existsSync('static/sounds')) {
-        mkdirSync('static/sounds', { recursive: true });
+    if (!fs.existsSync('static/sounds')) {
+        fs.mkdirSync('static/sounds', { recursive: true });
     }
     
     // Create recorder
-    const recorder = new Recorder();
+    const recorder = new Tone.Recorder();
     
     // Generate card flip sound
-    const cardFlipSynth = new MetalSynth({
+    const cardFlipSynth = new Tone.MetalSynth({
         frequency: 200,
         envelope: {
             attack: 0.001,
@@ -32,18 +32,18 @@ async function generateSounds() {
     cardFlipSynth.triggerAttackRelease("C4", "32n");
     await new Promise(resolve => setTimeout(resolve, 500));
     const cardFlipBlob = await recorder.stop();
-    writeFileSync('static/sounds/card_flip.mp3', Buffer.from(await cardFlipBlob.arrayBuffer()));
+    fs.writeFileSync('static/sounds/card_flip.mp3', Buffer.from(await cardFlipBlob.arrayBuffer()));
     
     // Generate match sound
-    const matchSynth = new PolySynth(Synth).connect(recorder);
+    const matchSynth = new Tone.PolySynth(Tone.Synth).connect(recorder);
     await recorder.start();
     matchSynth.triggerAttackRelease(["C4", "E4", "G4"], "8n");
     await new Promise(resolve => setTimeout(resolve, 1000));
     const matchBlob = await recorder.stop();
-    writeFileSync('static/sounds/match.mp3', Buffer.from(await matchBlob.arrayBuffer()));
+    fs.writeFileSync('static/sounds/match.mp3', Buffer.from(await matchBlob.arrayBuffer()));
     
     // Generate BGM
-    const bgmSynth = new PolySynth(Synth).connect(recorder);
+    const bgmSynth = new Tone.PolySynth(Tone.Synth).connect(recorder);
     const notes = ["C4", "E4", "G4", "B4"];
     await recorder.start();
     
@@ -55,7 +55,7 @@ async function generateSounds() {
     
     await new Promise(resolve => setTimeout(resolve, 8000));
     const bgmBlob = await recorder.stop();
-    writeFileSync('static/sounds/BGM.mp3', Buffer.from(await bgmBlob.arrayBuffer()));
+    fs.writeFileSync('static/sounds/BGM.mp3', Buffer.from(await bgmBlob.arrayBuffer()));
     
     // Cleanup
     cardFlipSynth.dispose();

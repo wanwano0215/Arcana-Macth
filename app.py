@@ -4,6 +4,7 @@ from flask import Flask, render_template, jsonify, session, send_from_directory,
 from flask_cors import CORS
 from flask_session import Session
 from game_logic import GameState
+from sound_effects import init_sound_effects, SOUND_EFFECTS
 from datetime import datetime, timedelta
 import logging
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -36,6 +37,8 @@ app.config.update(
 
 # Ensure session directory exists
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
+# Initialize sound effects
+init_sound_effects(app)
 Session(app)
 
 # Session recovery mechanism

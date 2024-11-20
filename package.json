@@ -8,8 +8,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "tone": "^15.0.4"
-  }
+  },
+  "description": ""
 }
