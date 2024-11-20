@@ -54,21 +54,38 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (audioInitialized) return;
         
         try {
-            // Create audio elements
-            cardFlipSound = new Audio('/static/sounds/card_flip.mp3');
-            cardFlipSound.volume = 0.2;  // 20% volume
+            // Create audio elements with proper error handling
+            cardFlipSound = new Audio();
+            cardFlipSound.src = '/static/sounds/card_flip.mp3';
+            cardFlipSound.volume = 0.2;
             
-            matchSound = new Audio('/static/sounds/match.mp3');
-            matchSound.volume = 0.3;  // 30% volume
+            matchSound = new Audio();
+            matchSound.src = '/static/sounds/match.mp3';
+            matchSound.volume = 0.3;
             
-            bgmPlayer = new Audio('/static/sounds/BGM.mp3');
-            bgmPlayer.volume = 0.2;  // 20% volume
+            bgmPlayer = new Audio();
+            bgmPlayer.src = '/static/sounds/BGM.mp3';
+            bgmPlayer.volume = 0.2;
             bgmPlayer.loop = true;
             
-            // Start BGM
-            await bgmPlayer.play().catch(error => {
-                console.error('BGM playback failed:', error);
-            });
+            // Ensure audio files are loaded before playing
+            await Promise.all([
+                new Promise((resolve, reject) => {
+                    cardFlipSound.addEventListener('canplaythrough', resolve);
+                    cardFlipSound.addEventListener('error', reject);
+                }),
+                new Promise((resolve, reject) => {
+                    matchSound.addEventListener('canplaythrough', resolve);
+                    matchSound.addEventListener('error', reject);
+                }),
+                new Promise((resolve, reject) => {
+                    bgmPlayer.addEventListener('canplaythrough', resolve);
+                    bgmPlayer.addEventListener('error', reject);
+                })
+            ]);
+            
+            // Start BGM only after loading
+            await bgmPlayer.play();
             
             audioInitialized = true;
             console.log('Audio initialized successfully');
@@ -82,20 +99,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function playCardFlipSound() {
         if (!audioInitialized || !cardFlipSound) return;
         try {
-            cardFlipSound.currentTime = 0;
-            await cardFlipSound.play();
+            // Create a new instance for each play to handle rapid clicks
+            const sound = cardFlipSound.cloneNode();
+            sound.volume = 0.2;
+            await sound.play();
         } catch (error) {
             console.error('Error playing card flip sound:', error);
+            // Silent fail to not disrupt gameplay
         }
     }
 
     async function playMatchSound() {
         if (!audioInitialized || !matchSound) return;
         try {
-            matchSound.currentTime = 0;
-            await matchSound.play();
+            // Create a new instance for match sound as well
+            const sound = matchSound.cloneNode();
+            sound.volume = 0.3;
+            await sound.play();
         } catch (error) {
             console.error('Error playing match sound:', error);
+            // Silent fail to not disrupt gameplay
         }
     }
 
