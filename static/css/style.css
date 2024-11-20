@@ -303,7 +303,7 @@ body {
 .enlarged-card {
     width: 100%;
     height: 100%;
-    transform: scale(5);
+    transform: scale(2.5);  /* Changed from scale(5) to scale(2.5) */
     transform-origin: center center;
     pointer-events: none; /* Prevent cursor interaction with card */
     position: relative;
