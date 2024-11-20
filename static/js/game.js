@@ -66,10 +66,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             
             matchSound = new Audio('/static/sounds/match.mp3');
-            matchSound.volume = 0.3;
+            matchSound.volume = 0.4;  // Increased from 0.3
             
             bgmPlayer = new Audio('/static/sounds/BGM.mp3');
-            bgmPlayer.volume = 0.2;
+            bgmPlayer.volume = 0.15;  // Reduced from 0.2
             bgmPlayer.loop = true;
             
             // Ensure BGM is properly loaded before attempting playback
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             // Create a new instance for match sound as well
             const sound = matchSound.cloneNode();
-            sound.volume = 0.3;
+            sound.volume = 0.4;  // Increased from 0.3
             await sound.play();
         } catch (error) {
             console.error('Error playing match sound:', error);
