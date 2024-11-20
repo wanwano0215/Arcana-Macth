@@ -53,8 +53,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function initializeAudio() {
         if (audioInitialized) return;
         
+        console.log('Loading audio files...');
         try {
+            // Create audio context
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            console.log('Audio context created successfully');
             
             // Create gain nodes with specified volumes
             const bgmGain = audioContext.createGain();
@@ -69,35 +72,55 @@ document.addEventListener('DOMContentLoaded', async function() {
             matchGain.gain.value = 0.3;  // 30% volume for match sound
             matchGain.connect(audioContext.destination);
             
+            console.log('Fetching sound files...');
             // Load sound files
             const [cardFlipResponse, matchResponse, bgmResponse] = await Promise.all([
-                fetch('/static/sounds/card_flip.mp3'),
-                fetch('/static/sounds/match.mp3'),
-                fetch('/static/sounds/BGM.mp3')
+                fetch('/static/sounds/card_flip.mp3').catch(error => {
+                    console.error('Failed to fetch card flip sound:', error);
+                    throw error;
+                }),
+                fetch('/static/sounds/match.mp3').catch(error => {
+                    console.error('Failed to fetch match sound:', error);
+                    throw error;
+                }),
+                fetch('/static/sounds/BGM.mp3').catch(error => {
+                    console.error('Failed to fetch BGM:', error);
+                    throw error;
+                })
             ]);
             
+            console.log('Decoding audio data...');
             const [cardFlipBuffer, matchBuffer, bgmBuffer] = await Promise.all([
                 audioContext.decodeAudioData(await cardFlipResponse.arrayBuffer()),
                 audioContext.decodeAudioData(await matchResponse.arrayBuffer()),
                 audioContext.decodeAudioData(await bgmResponse.arrayBuffer())
             ]);
             
+            console.log('Setting up audio players...');
             // Set up audio players with proper gain nodes
             cardFlipSound = {
                 play: async () => {
-                    const source = audioContext.createBufferSource();
-                    source.buffer = cardFlipBuffer;
-                    source.connect(cardFlipGain);
-                    source.start(0);
+                    try {
+                        const source = audioContext.createBufferSource();
+                        source.buffer = cardFlipBuffer;
+                        source.connect(cardFlipGain);
+                        source.start(0);
+                    } catch (error) {
+                        console.error('Error playing card flip sound:', error);
+                    }
                 }
             };
             
             matchSound = {
                 play: async () => {
-                    const source = audioContext.createBufferSource();
-                    source.buffer = matchBuffer;
-                    source.connect(matchGain);
-                    source.start(0);
+                    try {
+                        const source = audioContext.createBufferSource();
+                        source.buffer = matchBuffer;
+                        source.connect(matchGain);
+                        source.start(0);
+                    } catch (error) {
+                        console.error('Error playing match sound:', error);
+                    }
                 }
             };
             
@@ -114,7 +137,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } catch (error) {
             console.error('Audio initialization failed:', error);
             audioInitialized = false;
-            throw error; // Rethrow the error for proper error handling
+            throw new Error('Initialization error: ' + error.message);
         }
     }
 
