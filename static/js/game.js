@@ -250,13 +250,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Show overlay
         overlay.style.display = 'flex';
-        // Force reflow
-        overlay.offsetHeight;
+        overlay.offsetHeight; // Force reflow
         overlay.classList.add('active');
         
-        // Add click handler to close
+        // Add click handler to close when clicking either the overlay or the card
         const closeEnlarged = (e) => {
-            if (e.target === overlay) {
+            if (e.target === overlay || e.target.closest('.enlarged-card')) {
                 overlay.classList.remove('active');
                 setTimeout(() => {
                     overlay.style.display = 'none';

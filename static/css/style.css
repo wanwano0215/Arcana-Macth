@@ -303,13 +303,14 @@ body {
 .enlarged-card {
     width: 100%;
     height: 100%;
-    transform: scale(1);
+    transform: scale(5);
     transition: transform 0.3s ease-in-out;
+    cursor: pointer;
 }
 
 .enlarged-card .card-inner {
     transform: rotateY(180deg);
-    pointer-events: none;
+    pointer-events: auto;  /* Allow clicks on the card */
 }
 
 .enlarged-card .card-img {
