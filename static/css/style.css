@@ -269,3 +269,37 @@ body {
         max-width: 160px;  /* Adjusted for mobile */
     }
 }
+
+/* Enlarged card view styles */
+.enlarged-card-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    cursor: pointer;
+}
+
+.enlarged-card-overlay.active {
+    display: flex;
+}
+
+.enlarged-card-container {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease-in-out;
+}
+
+.enlarged-card {
+    transform: scale(10);
+    transition: transform 0.3s ease-in-out;
+}
+
+.enlarged-card .card-img {
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+}

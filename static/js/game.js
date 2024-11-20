@@ -222,6 +222,29 @@ document.addEventListener('DOMContentLoaded', async function() {
         backFace.src = `/static/images/${imageName}.png`;
         card.classList.add('flipped');
         await playCardFlipSound();
+        
+        // Show enlarged view after flip
+        setTimeout(() => {
+            showEnlargedCard(card);
+        }, 500); // Wait for flip animation to complete
+    }
+
+    function showEnlargedCard(card) {
+        const overlay = document.getElementById('enlarged-card-overlay');
+        const container = overlay.querySelector('.enlarged-card-container');
+        const clone = card.cloneNode(true);
+        clone.classList.add('enlarged-card');
+        
+        container.innerHTML = '';
+        container.appendChild(clone);
+        overlay.classList.add('active');
+        
+        overlay.onclick = () => {
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 300); // Wait for fade out animation
+        };
     }
 
     async function unflipCard(card) {
