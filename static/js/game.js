@@ -260,58 +260,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         backFace.src = `/static/images/${imageName}.png`;
         card.classList.add('flipped');
         await playCardFlipSound();
-        
-        // Show enlarged view after flip
-        setTimeout(() => {
-            showEnlargedCard(card);
-        }, 500); // Wait for flip animation to complete
-    }
-
-    function showEnlargedCard(card) {
-        const overlay = document.getElementById('enlarged-card-overlay');
-        const container = overlay.querySelector('.enlarged-card-container');
-        
-        // Only show enlarged view if card is flipped
-        if (!card.classList.contains('flipped')) return;
-        
-        // Create a new card element for the enlarged view
-        const enlargedCard = document.createElement('div');
-        enlargedCard.className = 'memory-card enlarged-card';
-        
-        // Copy the inner content from the original card
-        const cardInner = card.querySelector('.card-inner').cloneNode(true);
-        enlargedCard.appendChild(cardInner);
-        
-        // Clear previous content and add new enlarged card
-        container.innerHTML = '';
-        container.appendChild(enlargedCard);
-        
-        // Show overlay
-        overlay.style.display = 'flex';
-        requestAnimationFrame(() => {
-            overlay.classList.add('active');
-        });
-        
-        // Add auto-close timer
-        const autoCloseTimer = setTimeout(() => {
-            overlay.classList.remove('active');
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                container.innerHTML = '';
-            }, 300);
-        }, 2000); // Close after 2 seconds
-        
-        // Clear timer if user clicks to close early
-        overlay.onclick = (e) => {
-            clearTimeout(autoCloseTimer);
-            if (e.target === overlay || e.target.closest('.enlarged-card')) {
-                overlay.classList.remove('active');
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                    container.innerHTML = '';
-                }, 300);
-            }
-        };
     }
 
     async function unflipCard(card) {
@@ -420,7 +368,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
                     startTimer();  // Start timer on first card flip
-                    statusMessage.innerHTML = `${data.message}<br><small>※画像拡大時、カード以外をクリックしてください</small>`;
+                    statusMessage.textContent = data.message;
                     isProcessing = false;
                     return;
                 }
@@ -433,7 +381,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         markAsMatched(firstCard);
                         updateScore(data.player_score);
                         await playMatchSound();
-                        statusMessage.innerHTML = '🎉 Match! 🎉<br><small>※画像拡大時、カード以外をクリックしてください</small>';
+                        statusMessage.textContent = '🎉 Match! 🎉';
                     } else {
                         await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
