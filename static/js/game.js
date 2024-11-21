@@ -1,6 +1,77 @@
+// Load Panzoom from CDN
+const panzoomScript = document.createElement('script');
+panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
+document.head.appendChild(panzoomScript);
+
 document.addEventListener('DOMContentLoaded', async function() {
-// Import Panzoom
-import Panzoom from '@panzoom/panzoom';
+// Initialize variables and Panzoom
+const cardImageMap = {
+    0: '0愚者',
+    1: '1魔術師',
+    2: '2女教皇',
+    3: '3女帝',
+    4: '4皇帝',
+    5: '5教皇',
+    6: '6恋人',
+    7: '7戦車',
+    8: '8力',
+    9: '9隠者',
+    10: '10運命の輪',
+    11: '11正義',
+    12: '12吊るされた男',
+    13: '13死神',
+    14: '14節制',
+    15: '15悪魔',
+    16: '16塔',
+    17: '17星',
+    18: '18月',
+    19: '19太陽',
+    20: '20審判',
+    21: '21世界'
+};
+
+// Preload images
+async function preloadImages() {
+    console.log('Starting image preload...');
+    const imagePromises = [];
+    
+    // Preload card back
+    imagePromises.push(new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(`Card back loaded`);
+        img.onerror = () => reject(`Failed to load card back`);
+        img.src = `/static/images/card-back.png`;
+    }));
+    
+    // Preload all card faces
+    for (let i = 0; i <= 21; i++) {
+        const imageName = cardImageMap[i];
+        if (imageName) {
+            imagePromises.push(new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(`Loaded ${imageName}`);
+                img.onerror = () => reject(`Failed to load ${imageName}`);
+                img.src = `/static/images/${imageName}.png`;
+            }));
+        }
+    }
+    
+    try {
+        const results = await Promise.allSettled(imagePromises);
+        console.log('Image preload results:', results);
+        const failedLoads = results.filter(r => r.status === 'rejected');
+        if (failedLoads.length > 0) {
+            console.warn('Some images failed to load:', failedLoads);
+        }
+    } catch (error) {
+        console.error('Error preloading images:', error);
+    }
+}
+
+// Load Panzoom from CDN
+const panzoomScript = document.createElement('script');
+panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
+document.head.appendChild(panzoomScript);
     const cardGrid = document.getElementById('card-grid');
     const statusMessage = document.getElementById('status-message');
     const playerScoreElement = document.getElementById('player-score');
@@ -414,13 +485,60 @@ import Panzoom from '@panzoom/panzoom';
         throw new Error('Max retries reached');
     }
 
-    async function handleCardClick(event) {
+    async // Initialize Panzoom when modal is shown
+    const cardModal = document.getElementById('cardModal');
+    const panzoomElement = document.querySelector('.panzoom');
+    let panzoomInstance = null;
+
+    cardModal.addEventListener('show.bs.modal', function () {
+        if (!panzoomInstance) {
+            panzoomInstance = Panzoom(panzoomElement, {
+                maxScale: 5,
+                minScale: 0.5,
+                contain: 'outside'
+            });
+            
+            // Add mouse wheel zoom support
+            panzoomElement.parentElement.addEventListener('wheel', function(event) {
+                if (!event.shiftKey) return;
+                event.preventDefault();
+                panzoomInstance.zoomWithWheel(event);
+            });
+        }
+    });
+
+    cardModal.addEventListener('hidden.bs.modal', function () {
+        if (panzoomInstance) {
+            panzoomInstance.reset();
+        }
+    });
+
+    function showEnlargedCard(card) {
+        const cardImage = card.querySelector('.card-back img');
+        if (cardImage && cardImage.src) {
+            const enlargedCard = document.getElementById('enlarged-card');
+            enlargedCard.src = cardImage.src;
+            const modalInstance = new bootstrap.Modal(cardModal);
+            modalInstance.show();
+        }
+    }
+
+    function handleCardClick(event) {
         const currentTime = Date.now();
         if (currentTime - lastClickTime < MIN_CLICK_INTERVAL) {
             handleRateLimitError(event.target.closest('.memory-card'), '操作が早すぎます', 0.2);
             return;
         }
         lastClickTime = currentTime;
+
+        const card = event.target.closest('.memory-card');
+        if (!card) return;
+
+        // Show enlarged view for matched cards
+        if (card.classList.contains('matched')) {
+            showEnlargedCard(card);
+            return;
+        }
 
         if (isProcessing) return;
 
