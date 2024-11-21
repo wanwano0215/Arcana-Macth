@@ -288,7 +288,14 @@ body {
 }
 
 .memory-card.flipped .magnifier {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.memory-card.flipped.flip-complete .magnifier {
     display: flex;
+    opacity: 1;
 }
 
 .memory-card .magnifier:hover {

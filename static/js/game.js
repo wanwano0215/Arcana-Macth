@@ -401,10 +401,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         backFace.src = `/static/images/${imageName}.png`;
         card.classList.add('flipped');
         await playCardFlipSound();
+        
+        // Add flip-complete class after animation finishes
+        setTimeout(() => {
+            card.classList.add('flip-complete');
+        }, FLIP_ANIMATION_DURATION);
     }
 
     async function unflipCard(card) {
-        card.classList.remove('flipped');
+        card.classList.remove('flipped', 'flip-complete');
         await playCardFlipSound();
         setTimeout(() => {
             const backFace = card.querySelector('.card-back img');
