@@ -14,12 +14,54 @@ const loadPanzoom = () => {
     });
 };
 
+// Image cache and preloading
+const imageCache = new Map();
+const cardBackImage = '/static/images/カード裏面.png';
+
+async function preloadImages() {
+    console.log('Starting image preload...');
+    try {
+        // Preload card back image first
+        await preloadImage(cardBackImage);
+        
+        // Preload all card front images
+        const preloadPromises = Object.entries(cardImageMap).map(([key, value]) => 
+            preloadImage(`/static/images/${value}.png`)
+        );
+        
+        await Promise.all(preloadPromises);
+        console.log('All images preloaded successfully');
+    } catch (error) {
+        console.error('Error preloading images:', error);
+    }
+}
+
+function preloadImage(src) {
+    return new Promise((resolve, reject) => {
+        if (imageCache.has(src)) {
+            resolve(imageCache.get(src));
+            return;
+        }
+        
+        const img = new Image();
+        img.onload = () => {
+            imageCache.set(src, img);
+            resolve(img);
+        };
+        img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+        img.src = src;
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     // Constants
     const MIN_CLICK_INTERVAL = 200;
     const FLIP_ANIMATION_DURATION = 500;
     const MATCH_DISPLAY_DURATION = 1000;
     const MAX_RETRIES = 3;
+    
+    // Preload images before game starts
+    await preloadImages();
 
     // DOM Elements
     const cardGrid = document.getElementById('card-grid');
@@ -191,8 +233,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const cardFront = document.createElement('div');
         cardFront.className = 'card-front';
-        const frontImg = document.createElement('img');
-        frontImg.src = '/static/images/カード裏面.png';
+        const frontImg = new Image();
+        frontImg.src = imageCache.has(cardBackImage) ? cardBackImage : '/static/images/カード裏面.png';
         frontImg.alt = 'card back';
         frontImg.className = 'card-img';
         cardFront.appendChild(frontImg);
@@ -403,9 +445,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function flipCard(card, value) {
         const backFace = card.querySelector('.card-back img');
         const imageName = cardImageMap[value];
-        backFace.src = `/static/images/${imageName}.png`;
-        card.classList.add('flipped');
-        await playCardFlipSound();
+        const imageUrl = `/static/images/${imageName}.png`;
+        
+        try {
+            // Use cached image if available, otherwise load it
+            if (imageCache.has(imageUrl)) {
+                backFace.src = imageUrl;
+            } else {
+                await preloadImage(imageUrl);
+                backFace.src = imageUrl;
+            }
+            
+            card.classList.add('flipped');
+            await playCardFlipSound();
         
         // Add flip-complete class after animation finishes
         setTimeout(() => {
