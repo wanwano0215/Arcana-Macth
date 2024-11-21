@@ -275,9 +275,9 @@ body {
     position: absolute;
     top: 8px;
     right: 8px;
-    width: 24px;
-    height: 24px;
-    background-color: rgba(255, 255, 255, 0.9);
+    width: 28px;
+    height: 28px;
+    background-color: transparent;
     border-radius: 50%;
     display: none;
     justify-content: center;
@@ -285,6 +285,12 @@ body {
     cursor: pointer;
     z-index: 2;
     transition: transform 0.2s ease;
+}
+
+.memory-card .magnifier img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .memory-card.flipped .magnifier {

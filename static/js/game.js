@@ -174,7 +174,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Add magnifying glass icon
         const magnifier = document.createElement('div');
         magnifier.className = 'magnifier';
-        magnifier.innerHTML = '🔍';
+        const magnifierImg = document.createElement('img');
+        magnifierImg.src = '/static/images/拡大鏡.png';
+        magnifierImg.alt = 'Magnify';
+        magnifierImg.style.width = '100%';
+        magnifierImg.style.height = '100%';
+        magnifier.appendChild(magnifierImg);
         magnifier.addEventListener('click', (e) => {
             e.stopPropagation();
             showEnlargedCard(card);
