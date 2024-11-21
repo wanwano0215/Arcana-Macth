@@ -395,14 +395,16 @@ body {
 }
 /* Enlarged card modal styles */
 .modal-dialog {
-    max-width: fit-content;
-    margin: 1.75rem auto;
+    max-width: 95vw;
+    margin: 1rem auto;
 }
 
 .panzoom-container {
-    width: auto;
-    height: auto;
-    max-height: 90vh;
+    width: 100%;
+    height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
     position: relative;
 }
@@ -416,9 +418,10 @@ body {
 }
 
 #enlarged-card {
+    max-width: 95%;
+    max-height: 85vh;
     width: auto;
     height: auto;
-    max-height: 85vh;
     object-fit: contain;
 }
 
