@@ -43,11 +43,11 @@ body {
 
 .card-grid {
     display: grid;
-    grid-template-columns: repeat(9, 1fr);  /* Changed from 11 to 9 */
-    grid-template-rows: repeat(6, 1fr);    /* Changed from 4 to 6 */
+    grid-template-columns: repeat(8, 1fr); /* Changed to 8 columns for 44 cards */
+    grid-template-rows: repeat(6, 1fr);    /* 6 rows */
     gap: 15px;
     margin: 0 auto;
-    max-width: 1600px;
+    max-width: 1400px;
     padding: 20px;
     justify-items: center;
     align-items: center;

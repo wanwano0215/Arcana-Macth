@@ -241,16 +241,36 @@ document.addEventListener('DOMContentLoaded', async function() {
         const card = document.createElement('div');
         card.className = 'memory-card';
         card.setAttribute('data-index', index);
-        card.innerHTML = `
-            <div class="card-inner">
-                <div class="card-front">
-                    <img src="/static/images/カード裏面.png" alt="card back" class="card-img">
-                </div>
-                <div class="card-back">
-                    <img src="" alt="card front" class="card-img">
-                </div>
-            </div>
-        `;
+        
+        // Create card inner structure
+        const cardInner = document.createElement('div');
+        cardInner.className = 'card-inner';
+        
+        // Create front face
+        const cardFront = document.createElement('div');
+        cardFront.className = 'card-front';
+        const frontImg = document.createElement('img');
+        frontImg.src = '/static/images/カード裏面.png';
+        frontImg.alt = 'card back';
+        frontImg.className = 'card-img';
+        cardFront.appendChild(frontImg);
+        
+        // Create back face
+        const cardBack = document.createElement('div');
+        cardBack.className = 'card-back';
+        const backImg = document.createElement('img');
+        backImg.alt = 'card front';
+        backImg.className = 'card-img';
+        cardBack.appendChild(backImg);
+        
+        // Assemble card
+        cardInner.appendChild(cardFront);
+        cardInner.appendChild(cardBack);
+        card.appendChild(cardInner);
+        
+        // Add click event listener
+        card.addEventListener('click', handleCardClick);
+        
         return card;
     }
 
@@ -442,11 +462,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function initializeBoard() {
-        cardGrid.innerHTML = '';
-        for (let i = 0; i < 44; i++) {
-            cardGrid.appendChild(createCard(i));
+        // Clear existing content
+        while (cardGrid.firstChild) {
+            cardGrid.removeChild(cardGrid.firstChild);
         }
+        
+        // Create fragment for better performance
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < 44; i++) {
+            fragment.appendChild(createCard(i));
+        }
+        
+        // Append all cards at once
+        cardGrid.appendChild(fragment);
         firstCardFlipped = false;
+        
+        // Reset game state
+        isProcessing = false;
+        lastClickTime = 0;
         statusMessage.textContent = 'カードを2枚めくってください';
         statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
         statusMessage.classList.add('alert-info');
