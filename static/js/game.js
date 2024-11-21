@@ -171,6 +171,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         card.className = 'memory-card';
         card.setAttribute('data-index', index);
         
+        // Add magnifying glass icon
+        const magnifier = document.createElement('div');
+        magnifier.className = 'magnifier';
+        magnifier.innerHTML = '🔍';
+        magnifier.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showEnlargedCard(card);
+        });
+        card.appendChild(magnifier);
+        
         const cardInner = document.createElement('div');
         cardInner.className = 'card-inner';
         
@@ -206,21 +216,67 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Initialize Panzoom when modal is shown
     cardModal.addEventListener('show.bs.modal', async function () {
         try {
+            const panzoomContainer = document.querySelector('.panzoom-container');
+            panzoomContainer.classList.add('loading');
+
             if (!panzoomInstance) {
                 const Panzoom = await loadPanzoom();
                 panzoomInstance = Panzoom(panzoomElement, {
                     maxScale: 5,
                     minScale: 0.5,
-                    contain: 'outside'
+                    contain: 'outside',
+                    step: 0.1
                 });
-                
+
                 // Add mouse wheel zoom support
                 panzoomElement.parentElement.addEventListener('wheel', function(event) {
                     if (!event.shiftKey) return;
                     event.preventDefault();
                     panzoomInstance.zoomWithWheel(event);
+                    updateZoomLevel();
+                });
+
+                // Double-click to reset
+                panzoomElement.addEventListener('dblclick', function() {
+                    panzoomInstance.reset({ animate: true });
+                    updateZoomLevel();
+                });
+
+                // Add zoom controls
+                const zoomIn = document.querySelector('.zoom-in');
+                const zoomOut = document.querySelector('.zoom-out');
+                const zoomReset = document.querySelector('.zoom-reset');
+
+                zoomIn.addEventListener('click', () => {
+                    panzoomInstance.zoomIn({ animate: true });
+                    updateZoomLevel();
+                });
+
+                zoomOut.addEventListener('click', () => {
+                    panzoomInstance.zoomOut({ animate: true });
+                    updateZoomLevel();
+                });
+
+                zoomReset.addEventListener('click', () => {
+                    panzoomInstance.reset({ animate: true });
+                    updateZoomLevel();
                 });
             }
+
+            // Update zoom level display
+            function updateZoomLevel() {
+                const scale = panzoomInstance.getScale();
+                const percentage = Math.round(scale * 100);
+                document.querySelector('.zoom-level').textContent = `${percentage}%`;
+            }
+
+            // Remove loading state when image is loaded
+            const enlargedCard = document.getElementById('enlarged-card');
+            enlargedCard.onload = () => {
+                panzoomContainer.classList.remove('loading');
+                updateZoomLevel();
+            };
+
         } catch (error) {
             console.error('Failed to initialize Panzoom:', error);
             statusMessage.textContent = 'Failed to initialize zoom functionality';
