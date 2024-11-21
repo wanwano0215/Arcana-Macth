@@ -186,6 +186,75 @@ async function preloadImageWithRetries(src, maxRetries) {
     throw lastError;
 }
 
+// Initialize game board with error handling
+async function initializeBoard() {
+    console.log('Starting board initialization...');
+    try {
+        // Verify cardGrid exists
+        const cardGrid = document.getElementById('card-grid');
+        if (!cardGrid) {
+            throw new Error('Card grid element not found');
+        }
+        
+        // Clear existing cards
+        cardGrid.innerHTML = '';
+        console.log('Card grid cleared');
+
+        // Create cards with proper error handling
+        const cardValues = [];
+        for (let i = 0; i < 44; i++) {
+            cardValues.push(Math.floor(i / 2));
+        }
+        console.log(`Created card values array with ${cardValues.length} cards`);
+
+        // Shuffle cards
+        for (let i = cardValues.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [cardValues[i], cardValues[j]] = [cardValues[j], cardValues[i]];
+        }
+        console.log('Card values shuffled');
+
+        // Create and append cards
+        for (let i = 0; i < cardValues.length; i++) {
+            try {
+                const card = createCard(i);
+                card.setAttribute('data-value', cardValues[i]);
+                cardGrid.appendChild(card);
+                console.log(`Card ${i} created and appended successfully`);
+            } catch (error) {
+                console.error(`Error creating card ${i}:`, error);
+                // Continue with other cards if one fails
+                continue;
+            }
+        }
+
+        console.log('Board initialization completed successfully');
+        return true;
+    } catch (error) {
+        console.error('Critical error during board initialization:', error);
+        const statusMessage = document.getElementById('status-message');
+        if (statusMessage) {
+            statusMessage.textContent = 'ゲームボードの初期化に失敗しました。ページを更新してください。';
+            statusMessage.classList.add('alert-warning');
+        }
+        return false;
+    }
+}
+
+// Initialize board when document is ready
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        await preloadImages();
+        const boardInitialized = await initializeBoard();
+        if (!boardInitialized) {
+            throw new Error('Board initialization failed');
+        }
+        await initializeAudio();
+        console.log('Game initialization completed successfully');
+    } catch (error) {
+        console.error('Game initialization failed:', error);
+    }
+});
 document.addEventListener('DOMContentLoaded', async function() {
     // Constants
     const MIN_CLICK_INTERVAL = 200;
