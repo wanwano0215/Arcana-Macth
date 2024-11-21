@@ -369,6 +369,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                     } else {
                         await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
+                        // Keep the MATCH_DISPLAY_DURATION delay
+                        await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
+                        // Make sure both cards are unflipped simultaneously
                         await Promise.all([
                             unflipCard(card),
                             unflipCard(firstCard)
@@ -414,8 +417,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function unflipCard(card) {
-        card.classList.remove('flipped', 'flip-complete');
+        // Remove flip-complete class first
+        card.classList.remove('flip-complete');
+        // Then remove flipped class after a small delay
+        setTimeout(() => {
+            card.classList.remove('flipped');
+        }, 50);
+        
         await playCardFlipSound();
+        
+        // Clear the back image after animation completes
         setTimeout(() => {
             const backFace = card.querySelector('.card-back img');
             backFace.src = '';
