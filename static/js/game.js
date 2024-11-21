@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Constants
     const MIN_CLICK_INTERVAL = 200;
     const FLIP_ANIMATION_DURATION = 500;
-    const MATCH_DISPLAY_DURATION = 1000;
+    const MATCH_DISPLAY_DURATION = 500; // Reduced from 1000 to 500 milliseconds
     const MAX_RETRIES = 3;
 
     // DOM Elements
@@ -419,18 +419,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     async function unflipCard(card) {
         // Remove flip-complete class first
         card.classList.remove('flip-complete');
-        // Then remove flipped class after a small delay
+        // Reduce the delay before removing flipped class
         setTimeout(() => {
             card.classList.remove('flipped');
-        }, 50);
+        }, 25); // Reduced from 50 to 25 milliseconds
         
         await playCardFlipSound();
         
-        // Clear the back image after animation completes
+        // Reduce the animation duration for clearing the back image
         setTimeout(() => {
             const backFace = card.querySelector('.card-back img');
             backFace.src = '';
-        }, FLIP_ANIMATION_DURATION);
+        }, 300); // Reduced from FLIP_ANIMATION_DURATION (500) to 300 milliseconds
     }
 
     function markAsMatched(card) {
