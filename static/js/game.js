@@ -18,39 +18,172 @@ const loadPanzoom = () => {
 const imageCache = new Map();
 const cardBackImage = '/static/images/カード裏面.png';
 
-async function preloadImages() {
-    console.log('Starting image preload...');
-    try {
-        // Preload card back image first
-        await preloadImage(cardBackImage);
-        
-        // Preload all card front images
-        const preloadPromises = Object.entries(cardImageMap).map(([key, value]) => 
-            preloadImage(`/static/images/${value}.png`)
-        );
-        
-        await Promise.all(preloadPromises);
-        console.log('All images preloaded successfully');
-    } catch (error) {
-        console.error('Error preloading images:', error);
+// Clear image cache
+function clearImageCache() {
+    console.log('Clearing image cache...');
+    imageCache.clear();
+}
+
+// Preload single image with retries
+async function preloadImage(src, retries = 3) {
+    console.log(`Attempting to preload image: ${src}`);
+    
+    if (imageCache.has(src)) {
+        console.log(`Image already cached: ${src}`);
+        return imageCache.get(src);
+    }
+    
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            const img = await new Promise((resolve, reject) => {
+                const newImg = new Image();
+                
+                newImg.onload = () => {
+                    console.log(`Successfully loaded image: ${src}`);
+                    imageCache.set(src, newImg);
+                    resolve(newImg);
+                };
+                
+                newImg.onerror = () => {
+                    reject(new Error(`Failed to load image (attempt ${attempt}/${retries}): ${src}`));
+                };
+                
+                newImg.src = src;
+            });
+            
+            return img;
+        } catch (error) {
+            console.error(`Attempt ${attempt}/${retries} failed:`, error);
+            
+            if (attempt === retries) {
+                console.error(`All attempts to load image failed: ${src}`);
+                // Use fallback image if available
+                const fallbackImage = '/static/images/card-back.png';
+                if (src !== fallbackImage) {
+                    console.log(`Attempting to use fallback image: ${fallbackImage}`);
+                    return preloadImage(fallbackImage, 1);
+                }
+                throw error;
+            }
+            
+            // Wait before retry (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, Math.min(1000 * Math.pow(2, attempt - 1), 5000)));
+        }
     }
 }
 
-function preloadImage(src) {
-    return new Promise((resolve, reject) => {
-        if (imageCache.has(src)) {
-            resolve(imageCache.get(src));
-            return;
+async function preloadImages() {
+    console.log('Starting batch image preload...');
+    const loadedImages = new Set();
+    const failedImages = new Set();
+    const maxRetries = 3;
+    
+    try {
+        // Clear existing cache
+        clearImageCache();
+        
+        // Preload card back image first with retries
+        console.log('Preloading card back image...');
+        try {
+            await preloadImageWithRetries(cardBackImage, maxRetries);
+            loadedImages.add(cardBackImage);
+        } catch (error) {
+            console.error('Failed to load card back image:', error);
+            failedImages.add(cardBackImage);
+            // Use fallback if available
+            if (cardBackImage !== '/static/images/card-back.png') {
+                try {
+                    await preloadImageWithRetries('/static/images/card-back.png', 1);
+                } catch (fallbackError) {
+                    console.error('Failed to load fallback card back image:', fallbackError);
+                }
+            }
         }
         
-        const img = new Image();
-        img.onload = () => {
-            imageCache.set(src, img);
-            resolve(img);
-        };
-        img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-        img.src = src;
-    });
+        // Preload all card front images with individual retries
+        const preloadPromises = Object.entries(cardImageMap).map(async ([key, value]) => {
+            const imagePath = `/static/images/${value}.png`;
+            try {
+                await preloadImageWithRetries(imagePath, maxRetries);
+                loadedImages.add(imagePath);
+                console.log(`Successfully preloaded: ${imagePath}`);
+            } catch (error) {
+                failedImages.add(imagePath);
+                console.error(`Failed to preload card image after ${maxRetries} attempts: ${imagePath}`, error);
+            }
+        });
+        
+        await Promise.allSettled(preloadPromises);
+        
+        // Log preload results
+        console.log('Image preload complete:');
+        console.log(`Successfully loaded: ${loadedImages.size} images`);
+        if (failedImages.size > 0) {
+            console.warn(`Failed to load: ${failedImages.size} images`);
+            failedImages.forEach(path => console.warn(`- ${path}`));
+        }
+        
+        // Update status message based on preload results
+        const statusMessage = document.getElementById('status-message');
+        if (failedImages.size > 0) {
+            statusMessage.textContent = '一部の画像の読み込みに失敗しました。ゲームは続行できます。';
+            statusMessage.classList.add('alert-warning');
+        } else {
+            statusMessage.textContent = 'カードを2枚めくってください';
+            statusMessage.classList.remove('alert-warning');
+        }
+        
+    } catch (error) {
+        console.error('Critical error during image preload:', error);
+        const statusMessage = document.getElementById('status-message');
+        statusMessage.textContent = '画像の読み込みに問題が発生しました。ページを更新してください。';
+        statusMessage.classList.add('alert-warning');
+    }
+    
+    return {
+        success: loadedImages.size > 0,
+        loaded: loadedImages.size,
+        failed: failedImages.size,
+        failedPaths: Array.from(failedImages)
+    };
+}
+
+async function preloadImageWithRetries(src, maxRetries) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const img = await new Promise((resolve, reject) => {
+                const newImg = new Image();
+                
+                newImg.onload = () => {
+                    console.log(`Successfully loaded image on attempt ${attempt}: ${src}`);
+                    imageCache.set(src, newImg);
+                    resolve(newImg);
+                };
+                
+                newImg.onerror = () => {
+                    reject(new Error(`Failed to load image on attempt ${attempt}: ${src}`));
+                };
+                
+                newImg.src = src;
+            });
+            
+            return img;
+        } catch (error) {
+            lastError = error;
+            console.warn(`Attempt ${attempt}/${maxRetries} failed for ${src}:`, error);
+            
+            if (attempt < maxRetries) {
+                // Exponential backoff with jitter
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+                const jitter = delay * 0.1 * Math.random();
+                await new Promise(resolve => setTimeout(resolve, delay + jitter));
+            }
+        }
+    }
+    
+    throw lastError;
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
@@ -108,6 +241,59 @@ document.addEventListener('DOMContentLoaded', async function() {
     const cardModal = document.getElementById('cardModal');
     const panzoomElement = document.querySelector('.panzoom');
     let panzoomInstance = null;
+
+    // Show loading state for a card
+    function showLoadingState(card, isLoading) {
+        if (isLoading) {
+            card.classList.add('loading');
+        } else {
+            card.classList.remove('loading');
+        }
+    }
+
+    // Card flipping with improved preloading
+    async function flipCard(card, value) {
+        const backFace = card.querySelector('.card-back img');
+        const imageName = cardImageMap[value];
+        const imageUrl = `/static/images/${imageName}.png`;
+        
+        showLoadingState(card, true);
+        
+        try {
+            // Use cached image if available or load it with retries
+            let imageLoaded = false;
+            if (imageCache.has(imageUrl)) {
+                backFace.src = imageUrl;
+                imageLoaded = true;
+            } else {
+                try {
+                    await preloadImageWithRetries(imageUrl, 3);
+                    backFace.src = imageUrl;
+                    imageLoaded = true;
+                } catch (error) {
+                    console.error(`Failed to load card image: ${imageUrl}`, error);
+                    backFace.src = '/static/images/card-back.png';
+                }
+            }
+            
+            card.classList.add('flipped');
+            if (imageLoaded) {
+                await playCardFlipSound();
+            }
+        
+            // Add flip-complete class after animation finishes
+            setTimeout(() => {
+                card.classList.add('flip-complete');
+            }, FLIP_ANIMATION_DURATION);
+            
+        } catch (error) {
+            console.error('Error during card flip:', error);
+            statusMessage.textContent = 'カードをめくる際にエラーが発生しました';
+            statusMessage.classList.add('alert-warning');
+        } finally {
+            showLoadingState(card, false);
+        }
+    }
 
     // Load Panzoom dynamically
     const loadPanzoom = () => {
@@ -448,19 +634,41 @@ document.addEventListener('DOMContentLoaded', async function() {
         const imageUrl = `/static/images/${imageName}.png`;
         
         try {
-            // Use cached image if available, otherwise load it
+            // Use cached image if available or load it with retries
+            let imageLoaded = false;
             if (imageCache.has(imageUrl)) {
                 backFace.src = imageUrl;
+                imageLoaded = true;
             } else {
-                await preloadImage(imageUrl);
-                backFace.src = imageUrl;
+                try {
+                    await preloadImage(imageUrl);
+                    backFace.src = imageUrl;
+                    imageLoaded = true;
+                } catch (error) {
+                    console.error(`Failed to load card image: ${imageUrl}`, error);
+                    // Use fallback image
+                    backFace.src = '/static/images/card-back.png';
+                }
             }
             
             card.classList.add('flipped');
-            await playCardFlipSound();
-        
-        // Add flip-complete class after animation finishes
-        setTimeout(() => {
+            if (imageLoaded) {
+                await playCardFlipSound();
+            }
+            
+            // Add flip-complete class after animation finishes
+            setTimeout(() => {
+                card.classList.add('flip-complete');
+            }, 500);
+            
+        } catch (error) {
+            console.error('Error during card flip:', error);
+            statusMessage.textContent = 'カードをめくる際にエラーが発生しました';
+            statusMessage.classList.add('alert-warning');
+        } finally {
+            showLoadingState(card, false);
+        }
+    }
             card.classList.add('flip-complete');
         }, FLIP_ANIMATION_DURATION);
     }
