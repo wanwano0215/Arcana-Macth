@@ -317,10 +317,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Card interaction handlers
     async function handleCardClick(event) {
-        if (isProcessing) {
-            return;
-        }
-
         const currentTime = Date.now();
         if (currentTime - lastClickTime < MIN_CLICK_INTERVAL) {
             handleRateLimitError(event.target.closest('.memory-card'), '操作が早すぎます', 0.2);
@@ -329,13 +325,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         lastClickTime = currentTime;
 
         const card = event.target.closest('.memory-card');
-        if (!card || card.classList.contains('flipped')) return;
+        if (!card) return;
 
         // Show enlarged view for matched cards
         if (card.classList.contains('matched')) {
             showEnlargedCard(card);
             return;
         }
+
+        if (isProcessing || card.classList.contains('flipped')) return;
 
         isProcessing = true;
         showLoadingState(card, true);
@@ -351,12 +349,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (data.valid) {
                 await flipCard(card, data.card_value);
-                isProcessing = false;  // Reset processing flag after flip
-                
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
                     startTimer();
                     statusMessage.textContent = data.message;
+                    isProcessing = false;
                     return;
                 }
 
@@ -370,8 +367,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                         await playMatchSound();
                         statusMessage.textContent = '🎉 Match! 🎉';
                     } else {
+                        await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
                         const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
-                        // Ensure both cards unflip together
+                        // Keep the MATCH_DISPLAY_DURATION delay
+                        await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
+                        // Make sure both cards are unflipped simultaneously
                         await Promise.all([
                             unflipCard(card),
                             unflipCard(firstCard)
@@ -417,13 +417,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     async function unflipCard(card) {
+        // Remove flip-complete class first
         card.classList.remove('flip-complete');
-        card.classList.remove('flipped');
+        // Reduce the delay before removing flipped class
+        setTimeout(() => {
+            card.classList.remove('flipped');
+        }, 25); // Reduced from 50 to 25 milliseconds
+        
         await playCardFlipSound();
         
-        // Clear the back image immediately after unflip
-        const backFace = card.querySelector('.card-back img');
-        backFace.src = '';
+        // Reduce the animation duration for clearing the back image
+        setTimeout(() => {
+            const backFace = card.querySelector('.card-back img');
+            backFace.src = '';
+        }, 300); // Reduced from FLIP_ANIMATION_DURATION (500) to 300 milliseconds
     }
 
     function markAsMatched(card) {
