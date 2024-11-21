@@ -287,7 +287,7 @@ body {
     transition: transform 0.2s ease;
 }
 
-.memory-card .magnifier {
+.memory-card.flipped .magnifier {
     display: flex;
 }
 
