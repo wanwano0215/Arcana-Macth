@@ -166,6 +166,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Card creation and manipulation
     function createCard(index) {
+        console.log(`Creating card with index: ${index}`);
         const card = document.createElement('div');
         card.className = 'memory-card';
         card.setAttribute('data-index', index);
@@ -191,7 +192,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         cardInner.appendChild(cardFront);
         cardInner.appendChild(cardBack);
         card.appendChild(cardInner);
+
+        // Add click event listener to each card
+        card.addEventListener('click', function(e) {
+            console.log(`Card clicked - index: ${index}, flipped: ${card.classList.contains('flipped')}`);
+            handleCardClick(e);
+        });
         
+        console.log(`Card created successfully - index: ${index}`);
         return card;
     }
 
@@ -443,22 +451,54 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     function initializeBoard() {
+        console.log('Initializing game board...');
+        if (!cardGrid) {
+            console.error('Card grid element not found!');
+            return;
+        }
+
+        // Clear existing cards
         while (cardGrid.firstChild) {
             cardGrid.removeChild(cardGrid.firstChild);
         }
         
+        console.log('Creating new cards...');
         const fragment = document.createDocumentFragment();
         for (let i = 0; i < 44; i++) {
             fragment.appendChild(createCard(i));
         }
         
         cardGrid.appendChild(fragment);
+        console.log('Cards added to grid');
+
+        // Reset game state
         firstCardFlipped = false;
         isProcessing = false;
         lastClickTime = 0;
         statusMessage.textContent = 'カードを2枚めくってください';
         statusMessage.classList.remove('alert-danger', 'alert-warning', 'game-clear');
         statusMessage.classList.add('alert-info');
+
+        // Initialize Panzoom for matched cards
+        const cardModal = document.getElementById('cardModal');
+        if (cardModal) {
+            console.log('Initializing Panzoom...');
+            const panzoomElement = cardModal.querySelector('.panzoom');
+            if (panzoomElement) {
+                loadPanzoom().then(Panzoom => {
+                    panzoomInstance = Panzoom(panzoomElement, {
+                        maxScale: 5,
+                        minScale: 0.5,
+                        contain: 'outside'
+                    });
+                    console.log('Panzoom initialized successfully');
+                }).catch(error => {
+                    console.error('Failed to initialize Panzoom:', error);
+                });
+            }
+        }
+
+        console.log('Board initialization complete');
     }
 
     // Initialize game
