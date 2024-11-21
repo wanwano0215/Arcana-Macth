@@ -318,7 +318,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Card interaction handlers
     async function handleCardClick(event) {
         if (isProcessing) {
-            return;  // Prevent any card interaction while processing
+            return;
         }
 
         const currentTime = Date.now();
@@ -329,15 +329,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         lastClickTime = currentTime;
 
         const card = event.target.closest('.memory-card');
-        if (!card) return;
+        if (!card || card.classList.contains('flipped')) return;
 
         // Show enlarged view for matched cards
         if (card.classList.contains('matched')) {
             showEnlargedCard(card);
             return;
         }
-
-        if (card.classList.contains('flipped')) return;
 
         isProcessing = true;
         showLoadingState(card, true);
@@ -353,11 +351,12 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (data.valid) {
                 await flipCard(card, data.card_value);
+                isProcessing = false;  // Reset processing flag after flip
+                
                 if (!firstCardFlipped) {
                     firstCardFlipped = true;
                     startTimer();
                     statusMessage.textContent = data.message;
-                    isProcessing = false;
                     return;
                 }
 
