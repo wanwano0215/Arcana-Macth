@@ -1,12 +1,18 @@
 // Load Panzoom from CDN
-const panzoomScript = document.createElement('script');
-panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
-document.head.appendChild(panzoomScript);
-
-// Load Panzoom from CDN
-const panzoomScript = document.createElement('script');
-panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
-document.head.appendChild(panzoomScript);
+const loadPanzoom = () => {
+    return new Promise((resolve, reject) => {
+        if (window.Panzoom) {
+            resolve(window.Panzoom);
+            return;
+        }
+        
+        const panzoomScript = document.createElement('script');
+        panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
+        panzoomScript.onload = () => resolve(window.Panzoom);
+        panzoomScript.onerror = () => reject(new Error('Failed to load Panzoom'));
+        document.head.appendChild(panzoomScript);
+    });
+};
 
 document.addEventListener('DOMContentLoaded', async function() {
 // Initialize variables and Panzoom
@@ -350,40 +356,60 @@ document.head.appendChild(panzoomScript);
         card.addEventListener('click', handleCardClick);
         
         return card;
-    // Initialize Panzoom
-    let panzoom = null;
-    const modal = document.getElementById('cardModal');
+    // Initialize Panzoom when needed
+    let panzoomInstance = null;
+    const cardModal = document.getElementById('cardModal');
     const panzoomElement = document.querySelector('.panzoom');
-    
-    modal.addEventListener('show.bs.modal', function () {
-        if (!panzoom) {
-            panzoom = Panzoom(panzoomElement, {
-                maxScale: 5,
-                minScale: 0.5,
-                contain: 'outside'
-            });
-            
-            // Add mouse wheel zoom support
-            panzoomElement.parentElement.addEventListener('wheel', function(event) {
-                if (!event.shiftKey) return;
-                event.preventDefault();
-                const delta = event.deltaY;
-                panzoom.zoomWithWheel(event);
-            });
+
+    // Initialize Panzoom when modal is shown
+    cardModal.addEventListener('show.bs.modal', async function () {
+        try {
+            if (!panzoomInstance) {
+                const Panzoom = await loadPanzoom();
+                panzoomInstance = Panzoom(panzoomElement, {
+                    maxScale: 5,
+                    minScale: 0.5,
+                    contain: 'outside'
+                });
+                
+                // Add mouse wheel zoom support
+                panzoomElement.parentElement.addEventListener('wheel', function(event) {
+                    if (!event.shiftKey) return;
+                    event.preventDefault();
+                    panzoomInstance.zoomWithWheel(event);
+                });
+            }
+        } catch (error) {
+            console.error('Failed to initialize Panzoom:', error);
+            statusMessage.textContent = 'Failed to initialize zoom functionality';
+            statusMessage.classList.add('alert-warning');
         }
     });
 
-    modal.addEventListener('hidden.bs.modal', function () {
-        if (panzoom) {
-            panzoom.reset();
+    cardModal.addEventListener('hidden.bs.modal', function () {
+        if (panzoomInstance) {
+            try {
+                panzoomInstance.reset();
+            } catch (error) {
+                console.error('Failed to reset Panzoom:', error);
+            }
         }
     });
 
-    function showEnlargedCard(imageSrc) {
-        const enlargedCard = document.getElementById('enlarged-card');
-        enlargedCard.src = imageSrc;
-        const modalInstance = new bootstrap.Modal(modal);
-        modalInstance.show();
+    function showEnlargedCard(card) {
+        try {
+            const cardImage = card.querySelector('.card-back img');
+            if (cardImage && cardImage.src) {
+                const enlargedCard = document.getElementById('enlarged-card');
+                enlargedCard.src = cardImage.src;
+                const modalInstance = new bootstrap.Modal(cardModal);
+                modalInstance.show();
+            }
+        } catch (error) {
+            console.error('Failed to show enlarged card:', error);
+            statusMessage.textContent = 'Failed to show enlarged card';
+            statusMessage.classList.add('alert-warning');
+        }
     }
 
     // Update card click handler to support enlargement
