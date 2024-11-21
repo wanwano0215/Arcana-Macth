@@ -39,6 +39,25 @@
         <footer class="text-center mt-4">
             <button id="new-game-btn" class="btn btn-primary">New Game</button>
         </footer>
+    <!-- Modal for enlarged card view -->
+    <div class="modal fade" id="cardModal" tabindex="-1" aria-labelledby="cardModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cardModalLabel">Card Detail</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="panzoom-container">
+                        <div class="panzoom">
+                            <img id="enlarged-card" src="" alt="Enlarged card" class="img-fluid">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     </div>
 
     <!-- Audio elements for sound effects -->

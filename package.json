@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@panzoom/panzoom": "^4.5.1",
     "tone": "^15.0.4"
   },
   "description": ""

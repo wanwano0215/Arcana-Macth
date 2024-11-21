@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', async function() {
+// Import Panzoom
+import Panzoom from '@panzoom/panzoom';
     const cardGrid = document.getElementById('card-grid');
     const statusMessage = document.getElementById('status-message');
     const playerScoreElement = document.getElementById('player-score');
@@ -272,6 +274,62 @@ document.addEventListener('DOMContentLoaded', async function() {
         card.addEventListener('click', handleCardClick);
         
         return card;
+    // Initialize Panzoom
+    let panzoom = null;
+    const modal = document.getElementById('cardModal');
+    const panzoomElement = document.querySelector('.panzoom');
+    
+    modal.addEventListener('show.bs.modal', function () {
+        if (!panzoom) {
+            panzoom = Panzoom(panzoomElement, {
+                maxScale: 5,
+                minScale: 0.5,
+                contain: 'outside'
+            });
+            
+            // Add mouse wheel zoom support
+            panzoomElement.parentElement.addEventListener('wheel', function(event) {
+                if (!event.shiftKey) return;
+                event.preventDefault();
+                const delta = event.deltaY;
+                panzoom.zoomWithWheel(event);
+            });
+        }
+    });
+
+    modal.addEventListener('hidden.bs.modal', function () {
+        if (panzoom) {
+            panzoom.reset();
+        }
+    });
+
+    function showEnlargedCard(imageSrc) {
+        const enlargedCard = document.getElementById('enlarged-card');
+        enlargedCard.src = imageSrc;
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+    }
+
+    // Update card click handler to support enlargement
+    function handleCardClick(event) {
+        const card = event.target.closest('.memory-card');
+        if (!card) return;
+        
+        // If the card is already flipped, show enlarged view
+        if (card.classList.contains('flipped')) {
+            const cardImage = card.querySelector('.card-back img');
+            if (cardImage && cardImage.src) {
+                showEnlargedCard(cardImage.src);
+                return;
+            }
+        }
+
+        // Continue with original click handling for unflipped cards
+        const currentTime = Date.now();
+        if (currentTime - lastClickTime < MIN_CLICK_INTERVAL) {
+            handleRateLimitError(card, '操作が早すぎます', 0.2);
+            return;
+        }
     }
 
     async function flipCard(card, value) {
