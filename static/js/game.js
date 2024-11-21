@@ -3,6 +3,11 @@ const panzoomScript = document.createElement('script');
 panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
 document.head.appendChild(panzoomScript);
 
+// Load Panzoom from CDN
+const panzoomScript = document.createElement('script');
+panzoomScript.src = 'https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
+document.head.appendChild(panzoomScript);
+
 document.addEventListener('DOMContentLoaded', async function() {
 // Initialize variables and Panzoom
 const cardImageMap = {
@@ -485,14 +490,15 @@ document.head.appendChild(panzoomScript);
         throw new Error('Max retries reached');
     }
 
-    async // Initialize Panzoom when modal is shown
+    // Initialize modal and Panzoom elements
     const cardModal = document.getElementById('cardModal');
     const panzoomElement = document.querySelector('.panzoom');
     let panzoomInstance = null;
 
+    // Initialize Panzoom when modal is shown
     cardModal.addEventListener('show.bs.modal', function () {
-        if (!panzoomInstance) {
-            panzoomInstance = Panzoom(panzoomElement, {
+        if (!panzoomInstance && window.Panzoom) {
+            panzoomInstance = window.Panzoom(panzoomElement, {
                 maxScale: 5,
                 minScale: 0.5,
                 contain: 'outside'
@@ -541,8 +547,6 @@ document.head.appendChild(panzoomScript);
         }
 
         if (isProcessing) return;
-
-        const card = event.target.closest('.memory-card');
         if (!card || card.classList.contains('flipped') || card.classList.contains('matched')) {
             return;
         }
