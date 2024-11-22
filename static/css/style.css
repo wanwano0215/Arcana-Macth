@@ -281,10 +281,10 @@ body {
 /* Magnifying glass icon */
 .memory-card .magnifier {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 16px;
-    height: 16px;
+    top: 3px;
+    right: 3px;
+    width: 14px;
+    height: 14px;
     background-color: transparent;
     border-radius: 50%;
     display: none;
