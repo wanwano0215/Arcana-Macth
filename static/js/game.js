@@ -134,7 +134,7 @@ initializeAudio();
 
     async function playCardFlipSound() {
         if (cardFlipSound) {
-            cardFlipSound.volume = 0.6;  // 音量を60%に変更
+            cardFlipSound.volume = 1.0;  // 音量を100%に変更
             try {
                 await cardFlipSound.play();
             } catch (error) {
