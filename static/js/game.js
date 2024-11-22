@@ -90,21 +90,42 @@ document.addEventListener('DOMContentLoaded', async function() {
             matchSound = document.getElementById('match-sound');
             bgmPlayer = document.getElementById('bgm-sound');
 
-            console.log('Audio elements created:', {
-                cardFlipSound: !!cardFlipSound,
-                matchSound: !!matchSound,
-                bgmPlayer: !!bgmPlayer
-            });
-
             if (bgmPlayer) {
                 bgmPlayer.volume = 0.1;
-                const playPromise = bgmPlayer.play();
-                if (playPromise) {
-                    await playPromise;
-                    console.log('BGM started successfully');
-                }
+                bgmPlayer.loop = true;  // ループを確実に設定
+                
+                // ページ読み込み時にBGMを再生
+                document.addEventListener('DOMContentLoaded', async function() {
+                    try {
+                        // BGMの再生を試みる
+                        await bgmPlayer.play();
+                        console.log('BGM started successfully');
+                    } catch (error) {
+                        console.warn('AutoPlay failed, waiting for user interaction');
+                        // 自動再生が失敗した場合、ユーザーインタラクションを待つ
+                        document.addEventListener('click', async function playBGM() {
+                            try {
+                                await bgmPlayer.play();
+                                document.removeEventListener('click', playBGM);
+                                console.log('BGM started after user interaction');
+                            } catch (err) {
+                                console.error('BGM playback error:', err);
+                            }
+                        }, { once: true });
+                    }
+                });
+
+                // ページがバックグラウンドになった時の処理
+                document.addEventListener('visibilitychange', function() {
+                    if (document.hidden) {
+                        bgmPlayer.pause();
+                    } else {
+                        bgmPlayer.play().catch(error => {
+                            console.warn('BGM resume failed:', error);
+                        });
+                    }
+                });
             }
-            console.log('Audio initialized successfully');
         } catch (error) {
             console.error('Audio initialization error:', error);
         }
