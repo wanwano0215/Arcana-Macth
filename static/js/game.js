@@ -84,52 +84,53 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Initialize audio elements
     async function initializeAudio() {
-        console.log('Loading audio files...');
-        try {
-            cardFlipSound = document.getElementById('card-flip-sound');
-            matchSound = document.getElementById('match-sound');
-            bgmPlayer = document.getElementById('bgm-sound');
+    console.log('Loading audio files...');
+    try {
+        cardFlipSound = document.getElementById('card-flip-sound');
+        matchSound = document.getElementById('match-sound');
+        bgmPlayer = document.getElementById('bgm-sound');
 
-            if (bgmPlayer) {
-                bgmPlayer.volume = 0.1;
-                bgmPlayer.loop = true;  // ループを確実に設定
-                
-                // ページ読み込み時にBGMを再生
-                document.addEventListener('DOMContentLoaded', async function() {
-                    try {
-                        // BGMの再生を試みる
-                        await bgmPlayer.play();
-                        console.log('BGM started successfully');
-                    } catch (error) {
-                        console.warn('AutoPlay failed, waiting for user interaction');
-                        // 自動再生が失敗した場合、ユーザーインタラクションを待つ
-                        document.addEventListener('click', async function playBGM() {
-                            try {
-                                await bgmPlayer.play();
-                                document.removeEventListener('click', playBGM);
-                                console.log('BGM started after user interaction');
-                            } catch (err) {
-                                console.error('BGM playback error:', err);
-                            }
-                        }, { once: true });
-                    }
-                });
+        if (bgmPlayer) {
+            bgmPlayer.volume = 0.5;  // 音量を50%に変更
+            bgmPlayer.loop = true;
+            
+            // ページ読み込み直後にBGM再生を試みる
+            const playBGM = async () => {
+                try {
+                    await bgmPlayer.play();
+                    console.log('BGM started successfully');
+                } catch (error) {
+                    console.warn('BGM autoplay failed:', error);
+                }
+            };
 
-                // ページがバックグラウンドになった時の処理
-                document.addEventListener('visibilitychange', function() {
-                    if (document.hidden) {
-                        bgmPlayer.pause();
-                    } else {
-                        bgmPlayer.play().catch(error => {
-                            console.warn('BGM resume failed:', error);
-                        });
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Audio initialization error:', error);
+            // 即時実行
+            playBGM();
+            
+            // 自動再生が失敗した場合のフォールバック
+            document.addEventListener('click', async function initBGM() {
+                if (bgmPlayer.paused) {
+                    await playBGM();
+                }
+                document.removeEventListener('click', initBGM);
+            }, { once: true });
+
+            // バックグラウンド切り替え時の制御
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    bgmPlayer.pause();
+                } else if (bgmPlayer.paused) {
+                    bgmPlayer.play().catch(() => {});
+                }
+            });
         }
+    } catch (error) {
+        console.error('Audio initialization error:', error);
     }
+}
+
+// 初期化を即時実行
+initializeAudio();
 
     async function playCardFlipSound() {
         if (cardFlipSound) {
