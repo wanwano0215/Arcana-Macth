@@ -85,42 +85,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Image preloading
 const preloadImages = () => {
+    console.log('Starting image preload...');
     const imageUrls = Object.values(cardImageMap).map(name => `/static/images/${name}.png`);
     imageUrls.push('/static/images/カード裏面.png');
     imageUrls.push('/static/images/拡大鏡.png');
     
-    let loadedCount = 0;
-    const totalImages = imageUrls.length;
-    
-    // Update loading status
-    const updateLoadingStatus = () => {
-        loadedCount++;
-        const progress = Math.round((loadedCount / totalImages) * 100);
-        console.log(`Loading images: ${progress}%`);
-        if (loadedCount === totalImages) {
-            console.log('All images loaded successfully');
-        }
-    };
-
-    // Preload with caching and parallel loading
     const preloadPromises = imageUrls.map(url => {
         return new Promise((resolve, reject) => {
             const img = new Image();
-            
             img.onload = () => {
-                updateLoadingStatus();
+                console.log(`Loaded: ${url}`);
                 resolve(url);
             };
-            
             img.onerror = () => {
-                console.warn(`Failed to load image: ${url}`);
-                updateLoadingStatus();
+                console.warn(`Failed to load: ${url}`);
                 reject(url);
             };
-
-            // Enable browser caching
-            img.crossOrigin = 'anonymous';
-            img.src = `${url}?cache=${Date.now()}`;
+            img.src = url;
         });
     });
 
@@ -128,7 +109,9 @@ const preloadImages = () => {
         .then(results => {
             const failed = results.filter(r => r.status === 'rejected');
             if (failed.length > 0) {
-                console.warn(`${failed.length} images failed to load`);
+                console.warn(`Failed to load ${failed.length} images`);
+            } else {
+                console.log('All images loaded successfully');
             }
         });
 };
@@ -428,14 +411,16 @@ initializeAudio();
             return;
         }
 
-        const cardIndex = parseInt(card.dataset.index);
-        if (isNaN(cardIndex)) {
-            console.error('Invalid card index');
+        // 既にめくられているカードの数をチェック
+        const flippedCards = document.querySelectorAll('.memory-card.flipped:not(.matched)');
+        if (flippedCards.length >= 2) {
+            console.log('Already two cards flipped');
             return;
         }
 
-        // カードがすでにめくられている場合は処理しない
-        if (card.classList.contains('flipped')) {
+        const cardIndex = parseInt(card.dataset.index);
+        if (isNaN(cardIndex)) {
+            console.error('Invalid card index');
             return;
         }
 
@@ -468,14 +453,12 @@ initializeAudio();
                 if (data.game_over) {
                     handleGameOver(data);
                 }
-
-                statusMessage.textContent = data.message;
             }
         } catch (error) {
             console.error('Card flip error:', error);
-            card.classList.remove('flipped');
             statusMessage.textContent = 'カードをめくることができません。もう一度お試しください。';
             statusMessage.classList.add('alert-warning');
+            card.classList.remove('flipped');
         } finally {
             showLoadingState(card, false);
         }
