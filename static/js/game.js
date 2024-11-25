@@ -19,13 +19,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     preloadImages().catch(console.error);
 // Preload images function
 async function preloadImages() {
-    const imageUrls = [
+    // Essential images to preload immediately
+    const essentialImages = [
         '/static/images/カード裏面.png',
-        '/static/images/拡大鏡.png',
-        ...Object.values(cardImageMap).map(name => `/static/images/${name}.png`)
+        '/static/images/拡大鏡.png'
     ];
 
-    const imagePromises = imageUrls.map(url => {
+    // Create an IntersectionObserver for lazy loading
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                if (img.dataset.src) {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                    observer.unobserve(img);
+                }
+            }
+        });
+    }, {
+        rootMargin: '50px 0px',
+        threshold: 0.1
+    });
+
+    // Preload essential images first
+    const essentialPromises = essentialImages.map(url => {
         return new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => resolve(url);
@@ -35,11 +53,14 @@ async function preloadImages() {
     });
 
     try {
-        await Promise.all(imagePromises);
-        console.log('All images preloaded successfully');
+        await Promise.all(essentialPromises);
+        console.log('Essential images preloaded successfully');
     } catch (error) {
-        console.warn('Some images failed to preload:', error);
+        console.warn('Some essential images failed to preload:', error);
     }
+
+    // Return the observer for use in card creation
+    return imageObserver;
 }
 
     // Constants

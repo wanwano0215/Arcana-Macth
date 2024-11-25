@@ -283,8 +283,8 @@ body {
     position: absolute;
     top: 5px;
     right: 5px;
-    width: 50px;  /* 12pxから50pxに変更 */
-    height: 50px; /* 12pxから50pxに変更 */
+    width: 35px;  /* 50pxから35pxに変更 */
+    height: 35px; /* 50pxから35pxに変更 */
     background-color: transparent;
     border-radius: 50%;
     display: none;
