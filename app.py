@@ -9,12 +9,8 @@ from datetime import datetime, timedelta
 import logging
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Initialize Flask app
-app = Flask(__name__)
-app.config.update(
-    STATIC_FOLDER='static',
-    STATIC_URL_PATH='/static'
-)
+# Initialize Flask app with explicit static folder
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app)
 
 # Use ProxyFix to handle proxy headers correctly
@@ -27,86 +23,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configure Flask-Session with enhanced security and stability
+# Configure Flask-Session with filesystem storage
 app.config.update(
     SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "memory-game-secret"),
     SESSION_TYPE='filesystem',
-    SESSION_FILE_DIR='.flask_session',
+    SESSION_FILE_DIR=os.path.join(os.getcwd(), '.flask_session'),
     SESSION_PERMANENT=False,
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
     SESSION_USE_SIGNER=True,
-    SESSION_COOKIE_SECURE=False,  # Changed for local development compatibility
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
     MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max request size
-    SESSION_FILE_THRESHOLD=500,  # Limit number of session files
-    SESSION_REFRESH_EACH_REQUEST=True,
-    SEND_FILE_MAX_AGE_DEFAULT=43200,  # 12 hours cache for static files
-    STATIC_FOLDER_PATH=os.path.join(os.getcwd(), 'static')
+    SESSION_FILE_THRESHOLD=500  # Limit number of session files
 )
-
-# Enhanced error handlers
-@app.errorhandler(404)
-def handle_404_error(error):
-    logger.error(f"404 error occurred: {str(error)}")
-    if request.path.startswith('/static/'):
-        return jsonify({
-            'valid': False,
-            'message': '静的ファイルが見つかりませんでした'
-        }), 404
-    return jsonify({
-        'valid': False,
-        'message': 'ページが見つかりませんでした'
-    }), 404
-
-@app.errorhandler(500)
-def handle_500_error(error):
-    logger.error(f"500 error occurred: {str(error)}", exc_info=True)
-    return jsonify({
-        'valid': False,
-        'message': 'サーバーエラーが発生しました'
-    }), 500
-
-# Configure logging for static file access
-logging.getLogger('werkzeug').setLevel(logging.INFO)
-
-@app.errorhandler(Exception)
-def handle_error(error):
-    try:
-        logger.error(f"Unexpected error: {str(error)}", exc_info=True)
-        return jsonify({
-            'valid': False,
-            'message': 'エラーが発生しました。もう一度お試しください。'
-        }), 500
-    except Exception as e:
-        logger.critical(f"Error handler failed: {str(e)}")
-        return jsonify({'error': 'Critical server error'}), 500
-    finally:
-        if session.modified:
-            session.permanent = True
-
-def initialize_session():
-    try:
-        if 'game_state' not in session:
-            game_state = GameState()
-            session['game_state'] = game_state.to_dict()
-            session.modified = True
-    except Exception as e:
-        logger.error(f"Session initialization error: {str(e)}")
-        return None
-
-@app.before_request
-def before_request():
-    try:
-        if 'id' not in session:
-            session['id'] = os.urandom(16).hex()
-        if 'game_state' not in session:
-            game_state = GameState()
-            session['game_state'] = game_state.to_dict()
-        session.modified = True
-    except Exception as e:
-        app.logger.error(f"Session initialization error: {e}")
-        return render_template('error.html', message='セッションの初期化に失敗しました')
 
 # Ensure session directory exists
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
@@ -200,12 +127,14 @@ def add_header(response):
 @app.route('/')
 def index():
     try:
-        if not initialize_session():
-            return render_template('error.html', message='セッションの初期化に失敗しました')
+        if not recover_session():
+            return jsonify({'error': 'Failed to initialize session'}), 500
+        
+        logger.info("Game page loaded successfully")
         return render_template('game.html')
     except Exception as e:
-        logger.error(f"Error in index route: {str(e)}")
-        return render_template('error.html', message='エラーが発生しました')
+        logger.error(f"Error in index route: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Failed to initialize game'}), 500
 
 @app.route('/flip/<int:card_index>', methods=['POST'])
 def flip_card(card_index):
@@ -261,8 +190,10 @@ def new_game():
 # Explicit static file handling
 @app.route('/static/<path:filename>')
 def serve_static(filename):
+    if app.static_folder is None:
+        return jsonify({'error': 'Static folder not configured'}), 500
     try:
-        return send_from_directory('static', filename)
+        return send_from_directory(app.static_folder, filename)
     except Exception as e:
         logger.error(f"Error serving static file {filename}: {str(e)}")
         return jsonify({'error': 'Static file not found'}), 404

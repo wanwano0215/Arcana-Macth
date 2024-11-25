@@ -21,26 +21,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 const imageCache = new Map();
 
 async function preloadImages() {
-    console.log('Starting image preload...');
-    const imageLoadTimes = new Map();
-    
-    try {
-        const images = Object.entries(cardImageMap).map(([value, name]) => {
-            const start = performance.now();
-            const path = `/static/images/${name}.png`;
-            imageLoadTimes.set(path, start);
-            return { value, path };
-        });
-
-        for (const img of images) {
-            try {
-                await preloadSingleImage(img.path);
-                const loadTime = performance.now() - imageLoadTimes.get(img.path);
-                console.log(`Loaded ${img.path} in ${loadTime.toFixed(2)}ms`);
-            } catch (error) {
-                console.error(`Failed to load ${img.path}:`, error);
-            }
-        }
+    const imageCache = new Map();
+    const loadPriority = new Map();
+    let loadedImages = 0;
     
     // 優先度の設定
     function setPriority(cardValue) {
@@ -109,17 +92,8 @@ async function preloadImages() {
         // 優先度の高い画像から順に読み込む
         await Promise.all(loadPromises);
 
-    return;  // 成功したら終了
-            } catch (error) {
-                console.error(`Attempt ${i + 1} failed:`, error);
-                if (i === retries - 1) throw error;
-                await new Promise(resolve => setTimeout(resolve, 1000));  // 1秒待機
-            }
-        }
     } catch (error) {
-        console.error('Image preloading failed:', error);
-        statusMessage.textContent = '画像の読み込みに失敗しました。ページを更新してください。';
-        statusMessage.classList.add('alert-danger');
+        console.error('Image loading error:', error);
     }
 }
 
@@ -133,54 +107,6 @@ function preloadSingleImage(src) {
         const img = new Image();
         img.onload = () => {
             imageCache.set(src, true);
-// Error handling functions
-function handleError(error, context) {
-    console.error(`Error in ${context}:`, error);
-    
-    // エラーの種類に基づいて対応
-    if (error.name === 'NetworkError') {
-        retryOperation(context);
-    } else if (error.name === 'TimeoutError') {
-        handleTimeout(context);
-    } else {
-        // その他のエラー
-        showErrorMessage('予期せぬエラーが発生しました。');
-    }
-}
-
-// リトライ処理
-async function retryOperation(context, maxRetries = 3) {
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            await performOperation(context);
-            return;
-        } catch (error) {
-            if (i === maxRetries - 1) {
-                throw error;
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-        }
-    }
-}
-
-// メモリ使用量の監視と最適化
-const CACHE_SIZE_LIMIT = 50;
-
-function cleanupCache() {
-    if (imageCache.size > CACHE_SIZE_LIMIT) {
-        const entriesToRemove = Array.from(imageCache.entries())
-            .slice(0, Math.floor(CACHE_SIZE_LIMIT / 2));
-        entriesToRemove.forEach(([key]) => imageCache.delete(key));
-    }
-}
-
-// メモリ使用量のログ出力
-setInterval(() => {
-    if (performance && performance.memory) {
-        console.log(`Memory usage: ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)}MB`);
-    }
-    cleanupCache();
-}, 30000);
             resolve(src);
         };
         img.onerror = () => reject(src);

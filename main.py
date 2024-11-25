@@ -8,18 +8,14 @@ def setup_directories():
     """Ensure all required directories exist"""
     directories = [
         '.flask_session',
-        'static/images',
         'static/css',
         'static/js',
-        'static/sounds'
+        'templates'
     ]
     for directory in directories:
-        try:
-            path = os.path.join(os.getcwd(), directory)
-            os.makedirs(path, exist_ok=True)
-            os.chmod(path, 0o755)
-        except Exception as e:
-            logging.error(f"Failed to create directory {directory}: {e}")
+        os.makedirs(directory, exist_ok=True)
+        # Ensure directory has proper permissions
+        os.chmod(directory, 0o755)
 
 def setup_logging():
     """Configure logging"""
@@ -40,17 +36,27 @@ def cleanup_session_files():
         logging.error(f"Error cleaning up session files: {e}")
 
 if __name__ == "__main__":
-    try:
-        setup_logging()
-        setup_directories()
-        cleanup_session_files()
-        
-        app.run(
-            host='0.0.0.0',
-            port=5000,
-            debug=False,
-            threaded=True,
-            use_reloader=False
-        )
-    except Exception as e:
-        logging.error(f"Application startup error: {e}")
+    setup_logging()
+    setup_directories()
+    cleanup_session_files()
+    
+    # Configure Flask application with optimized settings
+    app.config.update(
+        SESSION_FILE_DIR=os.path.join(os.getcwd(), '.flask_session'),
+        PROPAGATE_EXCEPTIONS=True,
+        SESSION_PERMANENT=False,
+        PERMANENT_SESSION_LIFETIME=1800,  # 30 minutes
+        SESSION_REFRESH_EACH_REQUEST=True,
+        MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max request size
+        PREFERRED_URL_SCHEME='http'
+    )
+    
+    # Start the Flask application with optimized settings
+    app.run(
+        host='0.0.0.0',
+        port=5000,
+        debug=False,
+        threaded=True,
+        use_reloader=False,  # Disable reloader for stability
+        processes=1  # Single process for better session handling
+    )
