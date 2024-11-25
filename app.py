@@ -72,23 +72,37 @@ logging.getLogger('werkzeug').setLevel(logging.INFO)
 
 @app.errorhandler(Exception)
 def handle_error(error):
-    logger.error(f"Unexpected error: {str(error)}", exc_info=True)
-    return jsonify({
-        'valid': False,
-        'message': 'エラーが発生しました。もう一度お試しください。'
-    }), 500
+    try:
+        logger.error(f"Unexpected error: {str(error)}", exc_info=True)
+        return jsonify({
+            'valid': False,
+            'message': 'エラーが発生しました。もう一度お試しください。'
+        }), 500
+    except Exception as e:
+        logger.critical(f"Error handler failed: {str(e)}")
+        return jsonify({'error': 'Critical server error'}), 500
+    finally:
+        if session.modified:
+            session.permanent = True
 
 def initialize_session():
-    """Initialize or recover session state"""
-    if 'game_state' not in session:
-        game_state = GameState()
-        session['game_state'] = game_state.to_dict()
-        session.modified = True
-    return session['game_state']
+    try:
+        if 'game_state' not in session:
+            game_state = GameState()
+            session['game_state'] = game_state.to_dict()
+            session.modified = True
+        return session['game_state']
+    except Exception as e:
+        logger.error(f"Session initialization error: {str(e)}")
+        return None
+    finally:
+        if session.modified:
+            session.permanent = True
 
 @app.before_request
 def before_request():
     try:
+        # 静的ファイルディレクトリの確認と作成
         if not os.path.exists(app.static_folder):
             os.makedirs(app.static_folder, exist_ok=True)
         if not os.path.exists(os.path.join(app.static_folder, 'images')):
@@ -108,6 +122,10 @@ def before_request():
     except Exception as e:
         logger.error(f"Before request error: {str(e)}")
         return jsonify({'error': 'Server error'}), 500
+    finally:
+        # セッションの永続化を確実に
+        if session.modified:
+            session.permanent = True
 
 # Ensure session directory exists
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
