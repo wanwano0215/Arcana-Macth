@@ -15,6 +15,16 @@ const loadPanzoom = () => {
 };
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // デバッグモードの初期化
+    const debugModeToggle = document.getElementById('debug-mode-toggle');
+    const debugControls = document.getElementById('debug-controls');
+
+    debugModeToggle.addEventListener('click', () => {
+        const isDebugMode = debugControls.style.display === 'block';
+        debugControls.style.display = isDebugMode ? 'none' : 'block';
+        debugModeToggle.classList.toggle('active');
+    });
+
     try {
         preloadImages().catch(error => {
             console.error('Error during image preload:', error);
