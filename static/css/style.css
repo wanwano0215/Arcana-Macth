@@ -452,3 +452,12 @@ body {
     background-color: rgba(255, 255, 255, 0.95);
 }
 
+
+.memory-card .card-back img {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.memory-card .card-back img.loaded {
+    opacity: 1;
+}

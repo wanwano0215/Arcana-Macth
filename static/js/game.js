@@ -17,45 +17,98 @@ const loadPanzoom = () => {
 document.addEventListener('DOMContentLoaded', async function() {
     // Preload images in the background
     preloadImages().catch(console.error);
+// キャッシュを保持する
+const imageCache = new Map();
+
 async function preloadImages() {
-    console.log('Loading audio files...');
-    const cardBackImage = '/static/images/カード裏面.png';
-    const magnifierImage = '/static/images/拡大鏡.png';
+    const imageCache = new Map();
+    const loadPriority = new Map();
+    let loadedImages = 0;
+    
+    // 優先度の設定
+    function setPriority(cardValue) {
+        const visibleCards = Array.from(document.querySelectorAll('.memory-card'))
+            .filter(card => isElementInViewport(card));
+        const cardIndex = visibleCards.findIndex(card => card.dataset.cardValue === cardValue);
+        return cardIndex > -1 ? 1 : 0;
+    }
 
-    // 重要な画像を即時プリロード
-    await Promise.all([
-        preloadSingleImage(cardBackImage),
-        preloadSingleImage(magnifierImage)
-    ]);
+    // 画像のバッファリング
+    async function bufferImage(src, priority) {
+        if (imageCache.has(src)) return imageCache.get(src);
+        
+        const img = new Image();
+        const promise = new Promise((resolve, reject) => {
+            img.onload = () => {
+                loadedImages++;
+                updateLoadingProgress(loadedImages);
+                resolve(img);
+            };
+            img.onerror = reject;
+        });
+        
+        img.src = src;
+        imageCache.set(src, promise);
+        loadPriority.set(src, priority);
+        return promise;
+    }
 
-    // カード表面画像を遅延読み込み
-    const imageObserver = new IntersectionObserver(
-        (entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const card = entry.target;
-                    if (card.dataset.cardValue) {
-                        preloadCardImage(card.dataset.cardValue);
-                    }
-                }
-            });
-        },
-        { rootMargin: '50px', threshold: 0.1 }
-    );
+    // 画像の読み込み状況の更新
+    function updateLoadingProgress(loaded) {
+        const total = Object.keys(cardImageMap).length;
+        const progress = Math.floor((loaded / total) * 100);
+        console.log(`Loading progress: ${progress}%`);
+    }
 
-    // 各カードを監視
-    document.querySelectorAll('.memory-card').forEach(card => {
-        imageObserver.observe(card);
-    });
+    // 表示されている要素かどうかの判定
+    function isElementInViewport(el) {
+        const rect = el.getBoundingClientRect();
+        return (
+            rect.top >= 0 &&
+            rect.left >= 0 &&
+            rect.bottom <= window.innerHeight &&
+            rect.right <= window.innerWidth
+        );
+    }
 
-    return imageObserver;
+    // メイン処理
+    try {
+        const cardBackImage = '/static/images/カード裏面.png';
+        const magnifierImage = '/static/images/拡大鏡.png';
+
+        // 重要な画像を先に読み込む
+        await Promise.all([
+            bufferImage(cardBackImage, 2),
+            bufferImage(magnifierImage, 2)
+        ]);
+
+        // カード画像を非同期で読み込む
+        const loadPromises = Object.entries(cardImageMap).map(([value, name]) => {
+            const priority = setPriority(value);
+            const imagePath = `/static/images/${name}.png`;
+            return bufferImage(imagePath, priority);
+        });
+
+        // 優先度の高い画像から順に読み込む
+        await Promise.all(loadPromises);
+
+    } catch (error) {
+        console.error('Image loading error:', error);
+    }
 }
 
-// 個別の画像プリロード関数
+// 画像のプリロード関数を最適化
 function preloadSingleImage(src) {
+    if (imageCache.has(src)) {
+        return Promise.resolve(src);
+    }
+
     return new Promise((resolve, reject) => {
         const img = new Image();
-        img.onload = () => resolve(src);
+        img.onload = () => {
+            imageCache.set(src, true);
+            resolve(src);
+        };
         img.onerror = () => reject(src);
         img.src = src;
     });
