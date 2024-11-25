@@ -40,23 +40,10 @@ if __name__ == "__main__":
     setup_directories()
     cleanup_session_files()
     
-    # Configure Flask application with optimized settings
-    app.config.update(
-        SESSION_FILE_DIR=os.path.join(os.getcwd(), '.flask_session'),
-        PROPAGATE_EXCEPTIONS=True,
-        SESSION_PERMANENT=False,
-        PERMANENT_SESSION_LIFETIME=1800,  # 30 minutes
-        SESSION_REFRESH_EACH_REQUEST=True,
-        MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max request size
-        PREFERRED_URL_SCHEME='http'
-    )
-    
-    # Start the Flask application with optimized settings
     app.run(
         host='0.0.0.0',
         port=5000,
         debug=False,
         threaded=True,
-        use_reloader=False,  # Disable reloader for stability
-        processes=1  # Single process for better session handling
+        use_reloader=False
     )

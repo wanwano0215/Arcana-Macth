@@ -254,10 +254,8 @@ def new_game():
 # Explicit static file handling
 @app.route('/static/<path:filename>')
 def serve_static(filename):
-    if app.static_folder is None:
-        return jsonify({'error': 'Static folder not configured'}), 500
     try:
-        return send_from_directory(app.static_folder, filename)
+        return send_from_directory('static', filename)
     except Exception as e:
         logger.error(f"Error serving static file {filename}: {str(e)}")
         return jsonify({'error': 'Static file not found'}), 404
