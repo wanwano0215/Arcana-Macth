@@ -34,7 +34,10 @@ async function preloadImages() {
                     // Add loading attribute for better performance
                     img.loading = 'lazy';
                     // Cache the image URL and update to .webp extension
-                    const imageUrl = img.dataset.src.replace('.png', '.webp');
+                    const imageUrl = img.dataset.src;
+if (img.dataset.src) {
+    img.src = img.dataset.src.endsWith('.webp') ? img.dataset.src : img.dataset.src.replace('.png', '.webp');
+}
                     // Use requestIdleCallback for non-critical image loading
                     if ('requestIdleCallback' in window) {
                         requestIdleCallback(() => {
