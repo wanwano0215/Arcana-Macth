@@ -72,15 +72,48 @@ const preloadImages = () => {
     imageUrls.push('/static/images/カード裏面.png');
     imageUrls.push('/static/images/拡大鏡.png');
     
-    return Promise.all(imageUrls.map(url => {
+    let loadedCount = 0;
+    const totalImages = imageUrls.length;
+    
+    // Update loading status
+    const updateLoadingStatus = () => {
+        loadedCount++;
+        const progress = Math.round((loadedCount / totalImages) * 100);
+        console.log(`Loading images: ${progress}%`);
+        if (loadedCount === totalImages) {
+            console.log('All images loaded successfully');
+        }
+    };
+
+    // Preload with caching and parallel loading
+    const preloadPromises = imageUrls.map(url => {
         return new Promise((resolve, reject) => {
             const img = new Image();
-            img.onload = () => resolve(url);
-            img.onerror = () => reject(url);
-            img.src = url;
+            
+            img.onload = () => {
+                updateLoadingStatus();
+                resolve(url);
+            };
+            
+            img.onerror = () => {
+                console.warn(`Failed to load image: ${url}`);
+                updateLoadingStatus();
+                reject(url);
+            };
+
+            // Enable browser caching
+            img.crossOrigin = 'anonymous';
+            img.src = `${url}?cache=${Date.now()}`;
         });
-    })).then(() => console.log('All images preloaded successfully'))
-    .catch(error => console.warn('Some images failed to preload:', error));
+    });
+
+    return Promise.allSettled(preloadPromises)
+        .then(results => {
+            const failed = results.filter(r => r.status === 'rejected');
+            if (failed.length > 0) {
+                console.warn(`${failed.length} images failed to load`);
+            }
+        });
 };
 
 // Call preloadImages when the game starts
@@ -452,15 +485,30 @@ initializeAudio();
                 handleRateLimitError(card, data.message, data.backoff || 0.2);
             }
         } catch (error) {
+            console.error('Card flip error:', error);
+            
             if (error.message === 'Rate limit exceeded') {
                 handleRateLimitError(card, '操作が早すぎます', 0.2);
+            } else if (error.name === 'TypeError' || error.name === 'NetworkError') {
+                statusMessage.textContent = 'ネットワークエラーが発生しました。再度お試しください。';
             } else {
-                statusMessage.textContent = 'エラーが発生しました';
-                statusMessage.classList.add('alert-danger');
+                // Suppress generic error messages for better UX
+                statusMessage.textContent = 'カードをめくることができません。少し待ってから試してください。';
             }
+            
+            // Reset card state
+            card.classList.remove('flipped', 'flip-complete');
+            statusMessage.classList.add('alert-warning');
+            setTimeout(() => statusMessage.classList.remove('alert-warning'), 3000);
+            
         } finally {
             isProcessing = false;
             showLoadingState(card, false);
+            gameState.isFlipping = false;
+            
+            // Clean up any lingering states
+            const loadingCards = document.querySelectorAll('.memory-card.loading');
+            loadingCards.forEach(c => c.classList.remove('loading'));
         }
     }
 
