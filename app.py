@@ -98,20 +98,15 @@ def initialize_session():
 @app.before_request
 def before_request():
     try:
-        if not os.path.exists(app.static_folder):
-            os.makedirs(app.static_folder, exist_ok=True)
-        if not os.path.exists(os.path.join(app.static_folder, 'images')):
-            os.makedirs(os.path.join(app.static_folder, 'images'), exist_ok=True)
-        
         if 'id' not in session:
             session['id'] = os.urandom(16).hex()
-            session.modified = True
-        
-        if request.endpoint != 'static':
-            initialize_session()
+        if 'game_state' not in session:
+            game_state = GameState()
+            session['game_state'] = game_state.to_dict()
+        session.modified = True
     except Exception as e:
-        logger.error(f"Before request error: {str(e)}")
-        return jsonify({'error': 'Server error'}), 500
+        app.logger.error(f"Session initialization error: {e}")
+        return render_template('error.html', message='セッションの初期化に失敗しました')
 
 # Ensure session directory exists
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)

@@ -470,15 +470,15 @@ body {
 
 .magnifier {
     position: absolute;
-    top: 2px;
-    right: 2px;
-    width: 12px;  /* Further reduced size */
-    height: 12px; /* Further reduced size */
+    top: 1px;
+    right: 1px;
+    width: 10px;  /* Reduced size further */
+    height: 10px; /* Reduced size further */
     cursor: pointer;
-    opacity: 0.5;  /* Slightly reduced opacity */
+    opacity: 0.4;  /* Reduced opacity further */
     transition: opacity 0.3s ease;
     z-index: 2;
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.6);
     border-radius: 50%;
     padding: 1px;
 }

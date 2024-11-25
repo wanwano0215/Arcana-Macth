@@ -8,14 +8,18 @@ def setup_directories():
     """Ensure all required directories exist"""
     directories = [
         '.flask_session',
+        'static/images',
         'static/css',
         'static/js',
-        'templates'
+        'static/sounds'
     ]
     for directory in directories:
-        os.makedirs(directory, exist_ok=True)
-        # Ensure directory has proper permissions
-        os.chmod(directory, 0o755)
+        try:
+            path = os.path.join(os.getcwd(), directory)
+            os.makedirs(path, exist_ok=True)
+            os.chmod(path, 0o755)
+        except Exception as e:
+            logging.error(f"Failed to create directory {directory}: {e}")
 
 def setup_logging():
     """Configure logging"""
