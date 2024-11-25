@@ -27,11 +27,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     const playerScoreElement = document.getElementById('player-score');
     const statusMessage = document.getElementById('status-message');
 
-    // Game state
-    let isProcessing = false;
-    let firstCardFlipped = false;
-    let lastClickTime = 0;
-    let gameStartTime = null;
+    // Game state with strict control
+    const gameState = {
+        isProcessing: false,
+        isFlipping: false,
+        firstCardFlipped: false,
+        lastClickTime: 0,
+        gameStartTime: null,
+        animationFrameId: null
+    };
 
     // Audio elements
     let cardFlipSound, matchSound, bgmPlayer;
@@ -174,16 +178,24 @@ initializeAudio();
     }
 
     function updateTimer() {
-        if (!gameStartTime) return;
+        if (!gameState.gameStartTime) return;
         
-        const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+        const elapsed = Math.floor((Date.now() - gameState.gameStartTime) / 1000);
         const minutes = Math.floor(elapsed / 60);
         const seconds = elapsed % 60;
         
         document.getElementById('timer-display').textContent = 
             `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        requestAnimationFrame(updateTimer);
+        gameState.animationFrameId = requestAnimationFrame(updateTimer);
+    }
+
+    // Cleanup animation frame on game end
+    function cleanupAnimations() {
+        if (gameState.animationFrameId) {
+            cancelAnimationFrame(gameState.animationFrameId);
+            gameState.animationFrameId = null;
+        }
     }
 
     // Card creation and manipulation
@@ -340,11 +352,11 @@ initializeAudio();
     // Card interaction handlers
     async function handleCardClick(event) {
         const currentTime = Date.now();
-        if (currentTime - lastClickTime < MIN_CLICK_INTERVAL) {
+        if (currentTime - gameState.lastClickTime < MIN_CLICK_INTERVAL) {
             handleRateLimitError(event.target.closest('.memory-card'), '操作が早すぎます', 0.2);
             return;
         }
-        lastClickTime = currentTime;
+        gameState.lastClickTime = currentTime;
 
         const card = event.target.closest('.memory-card');
         if (!card) return;
@@ -355,9 +367,10 @@ initializeAudio();
             return;
         }
 
-        if (isProcessing || card.classList.contains('flipped')) return;
+        if (gameState.isProcessing || gameState.isFlipping || card.classList.contains('flipped')) return;
 
-        isProcessing = true;
+        gameState.isProcessing = true;
+        gameState.isFlipping = true;
         showLoadingState(card, true);
         
         try {
