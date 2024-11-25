@@ -470,17 +470,17 @@ body {
 
 .magnifier {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    width: 24px;  /* Reduced from default size */
-    height: 24px; /* Reduced from default size */
+    top: 3px;
+    right: 3px;
+    width: 18px;  /* Further reduced size */
+    height: 18px; /* Further reduced size */
     cursor: pointer;
-    opacity: 0.7;
+    opacity: 0.6;
     transition: opacity 0.3s ease;
     z-index: 2;
-    background: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.7);
     border-radius: 50%;
-    padding: 3px;
+    padding: 2px;
 }
 
 .magnifier:hover {
