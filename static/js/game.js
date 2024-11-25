@@ -25,21 +25,29 @@ async function preloadImages() {
         '/static/images/拡大鏡.png'
     ];
 
-    // Create an IntersectionObserver for lazy loading
+    // Create an IntersectionObserver for lazy loading with optimized settings
     const imageObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const img = entry.target;
                 if (img.dataset.src) {
-                    img.src = img.dataset.src;
-                    img.removeAttribute('data-src');
-                    observer.unobserve(img);
+                    // Add loading attribute for better performance
+                    img.loading = 'lazy';
+                    // Cache the image URL
+                    const imageUrl = img.dataset.src;
+                    requestAnimationFrame(() => {
+                        img.src = imageUrl;
+                        img.removeAttribute('data-src');
+                        observer.unobserve(img);
+                    });
                 }
             }
         });
     }, {
-        rootMargin: '50px 0px',
-        threshold: 0.1
+        rootMargin: '100px 0px', // Increased margin for earlier loading
+        threshold: 0.01, // Reduced threshold for faster trigger
+        trackVisibility: true, // Enable visibility tracking
+        delay: 100 // Add small delay to batch process entries
     });
 
     // Preload essential images first
