@@ -91,40 +91,27 @@ def initialize_session():
             game_state = GameState()
             session['game_state'] = game_state.to_dict()
             session.modified = True
-        return session['game_state']
     except Exception as e:
         logger.error(f"Session initialization error: {str(e)}")
         return None
-    finally:
-        if session.modified:
-            session.permanent = True
 
 @app.before_request
 def before_request():
     try:
-        # 静的ファイルディレクトリの確認と作成
         if not os.path.exists(app.static_folder):
             os.makedirs(app.static_folder, exist_ok=True)
         if not os.path.exists(os.path.join(app.static_folder, 'images')):
             os.makedirs(os.path.join(app.static_folder, 'images'), exist_ok=True)
         
-        # セッションの初期化
         if 'id' not in session:
             session['id'] = os.urandom(16).hex()
             session.modified = True
         
-        # ゲーム状態の初期化
         if request.endpoint != 'static':
-            if 'game_state' not in session:
-                game_state = GameState()
-                session['game_state'] = game_state.to_dict()
-                session.modified = True
+            initialize_session()
     except Exception as e:
         logger.error(f"Before request error: {str(e)}")
         return jsonify({'error': 'Server error'}), 500
-    finally:
-        if session.modified:
-            session.permanent = True
 
 # Ensure session directory exists
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
@@ -218,23 +205,12 @@ def add_header(response):
 @app.route('/')
 def index():
     try:
-        # セッションの初期化を確実に行う
-        if 'game_state' not in session:
-            game_state = GameState()
-            session['game_state'] = game_state.to_dict()
-            session.modified = True
-        
-        # カードの生成を確認
-        game_state = GameState.from_dict(session['game_state'])
-        if not game_state.cards:
-            game_state = GameState()
-            session['game_state'] = game_state.to_dict()
-            session.modified = True
-        
+        if not initialize_session():
+            return render_template('error.html', message='セッションの初期化に失敗しました')
         return render_template('game.html')
     except Exception as e:
-        logger.error(f"Error in index route: {str(e)}", exc_info=True)
-        return render_template('error.html', message='ゲームの初期化に失敗しました。ページを更新してください。')
+        logger.error(f"Error in index route: {str(e)}")
+        return render_template('error.html', message='エラーが発生しました')
 
 @app.route('/flip/<int:card_index>', methods=['POST'])
 def flip_card(card_index):

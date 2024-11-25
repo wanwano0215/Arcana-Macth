@@ -36,14 +36,17 @@ def cleanup_session_files():
         logging.error(f"Error cleaning up session files: {e}")
 
 if __name__ == "__main__":
-    setup_logging()
-    setup_directories()
-    cleanup_session_files()
-    
-    app.run(
-        host='0.0.0.0',
-        port=5000,
-        debug=False,
-        threaded=True,
-        use_reloader=False
-    )
+    try:
+        setup_logging()
+        setup_directories()
+        cleanup_session_files()
+        
+        app.run(
+            host='0.0.0.0',
+            port=5000,
+            debug=False,
+            threaded=True,
+            use_reloader=False
+        )
+    except Exception as e:
+        logging.error(f"Application startup error: {e}")
