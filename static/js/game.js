@@ -19,38 +19,51 @@ document.addEventListener('DOMContentLoaded', async function() {
     preloadImages().catch(console.error);
 // Preload images function
 async function preloadImages() {
-    // Essential images to preload immediately
-    const essentialImages = [
-        '/static/images/カード裏面.png',
-        '/static/images/拡大鏡.png'
-    ];
+    const cardBackImage = '/static/images/カード裏面.png';
+    const magnifierImage = '/static/images/拡大鏡.png';
 
-    // Create an IntersectionObserver for lazy loading with optimized settings
-    const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                if (img.dataset.src) {
-                    // Add loading attribute for better performance
-                    img.loading = 'lazy';
-                    // Cache the image URL
-                    const imageUrl = img.dataset.src;
-                    requestAnimationFrame(() => {
-                        img.src = imageUrl;
-                        img.removeAttribute('data-src');
-                        observer.unobserve(img);
-                    });
+    // 重要な画像を即時プリロード
+    await Promise.all([
+        preloadSingleImage(cardBackImage),
+        preloadSingleImage(magnifierImage)
+    ]);
+
+    // カード表面画像を遅延読み込み
+    const imageObserver = new IntersectionObserver(
+        (entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const card = entry.target;
+                    if (card.dataset.cardValue) {
+                        preloadCardImage(card.dataset.cardValue);
+                    }
                 }
-            }
-        });
-    }, {
-        rootMargin: '100px 0px', // Increased margin for earlier loading
-        threshold: 0.01, // Reduced threshold for faster trigger
-        trackVisibility: true, // Enable visibility tracking
-        delay: 100 // Add small delay to batch process entries
-    });
+            });
+        },
+        { rootMargin: '50px', threshold: 0.1 }
+    );
 
-    // Preload essential images first
+    // 各カードを監視
+    document.querySelectorAll('.memory-card').forEach(card => {
+        imageObserver.observe(card);
+    });
+}
+
+// 個別の画像プリロード関数
+function preloadSingleImage(src) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(src);
+        img.onerror = () => reject(src);
+        img.src = src;
+    });
+}
+
+// カード画像のプリロード
+function preloadCardImage(cardValue) {
+    const imagePath = `/static/images/${cardImageMap[cardValue]}.png`;
+    return preloadSingleImage(imagePath);
+}
     const essentialPromises = essentialImages.map(url => {
         return new Promise((resolve, reject) => {
             const img = new Image();
