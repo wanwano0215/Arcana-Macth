@@ -191,14 +191,23 @@ def add_header(response):
 @app.route('/')
 def index():
     try:
-        if not recover_session():
-            return jsonify({'error': 'Failed to initialize session'}), 500
+        # セッションの初期化を確実に行う
+        if 'game_state' not in session:
+            game_state = GameState()
+            session['game_state'] = game_state.to_dict()
+            session.modified = True
         
-        logger.info("Game page loaded successfully")
+        # カードの生成を確認
+        game_state = GameState.from_dict(session['game_state'])
+        if not game_state.cards:
+            game_state = GameState()
+            session['game_state'] = game_state.to_dict()
+            session.modified = True
+        
         return render_template('game.html')
     except Exception as e:
         logger.error(f"Error in index route: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Failed to initialize game'}), 500
+        return render_template('error.html', message='ゲームの初期化に失敗しました。ページを更新してください。')
 
 @app.route('/flip/<int:card_index>', methods=['POST'])
 def flip_card(card_index):
