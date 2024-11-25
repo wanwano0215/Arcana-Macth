@@ -21,9 +21,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 const imageCache = new Map();
 
 async function preloadImages() {
-    const imageCache = new Map();
-    const loadPriority = new Map();
-    
     try {
         const cardBackImage = '/static/images/カード裏面.png';
         const magnifierImage = '/static/images/拡大鏡.png';
@@ -44,9 +41,31 @@ async function preloadImages() {
         
         // カードを生成して表示
         initializeCards();
+        console.log('All images loaded successfully');
 
     } catch (error) {
         console.error('Image loading error:', error);
+    } finally {
+        isProcessing = false;
+    }
+}
+
+// カード生成関数の修正
+function initializeCards() {
+    const cardGrid = document.getElementById('card-grid');
+    if (!cardGrid) {
+        console.error('Card grid element not found');
+        return;
+    }
+
+    cardGrid.innerHTML = '';
+    
+    // カードの配置
+    for (let i = 0; i < 44; i++) {
+        const card = createCard(i);
+        if (card) {
+            cardGrid.appendChild(card);
+        }
     }
 }
 
