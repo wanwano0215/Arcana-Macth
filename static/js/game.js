@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function preloadImages() {
     // Essential images to preload immediately
     const essentialImages = [
-        '/static/images/カード裏面.png',
+        '/static/images/カード裏面.webp',
         '/static/images/拡大鏡.png'
     ];
 
@@ -33,21 +33,30 @@ async function preloadImages() {
                 if (img.dataset.src) {
                     // Add loading attribute for better performance
                     img.loading = 'lazy';
-                    // Cache the image URL
-                    const imageUrl = img.dataset.src;
-                    requestAnimationFrame(() => {
-                        img.src = imageUrl;
-                        img.removeAttribute('data-src');
-                        observer.unobserve(img);
-                    });
+                    // Cache the image URL and update to .webp extension
+                    const imageUrl = img.dataset.src.replace('.png', '.webp');
+                    // Use requestIdleCallback for non-critical image loading
+                    if ('requestIdleCallback' in window) {
+                        requestIdleCallback(() => {
+                            img.src = imageUrl;
+                            img.removeAttribute('data-src');
+                            observer.unobserve(img);
+                        });
+                    } else {
+                        requestAnimationFrame(() => {
+                            img.src = imageUrl;
+                            img.removeAttribute('data-src');
+                            observer.unobserve(img);
+                        });
+                    }
                 }
             }
         });
     }, {
-        rootMargin: '100px 0px', // Increased margin for earlier loading
-        threshold: 0.01, // Reduced threshold for faster trigger
-        trackVisibility: true, // Enable visibility tracking
-        delay: 100 // Add small delay to batch process entries
+        rootMargin: '150px 0px', // Further increased margin for earlier loading
+        threshold: 0.01, // Keep reduced threshold
+        trackVisibility: true,
+        delay: 50 // Reduced delay for faster response
     });
 
     // Preload essential images first
@@ -270,7 +279,7 @@ initializeAudio();
         const cardFront = document.createElement('div');
         cardFront.className = 'card-front';
         const frontImg = document.createElement('img');
-        frontImg.src = '/static/images/カード裏面.png';
+        frontImg.src = '/static/images/カード裏面.webp';
         frontImg.alt = 'card back';
         frontImg.className = 'card-img';
         cardFront.appendChild(frontImg);
