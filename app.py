@@ -10,7 +10,10 @@ import logging
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Initialize Flask app with explicit static folder
-app = Flask(__name__, static_folder='static', static_url_path='/static')
+app = Flask(__name__, 
+    static_folder='static',
+    static_url_path='/static'
+)
 CORS(app)
 
 # Use ProxyFix to handle proxy headers correctly
@@ -27,16 +30,44 @@ logger = logging.getLogger(__name__)
 app.config.update(
     SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "memory-game-secret"),
     SESSION_TYPE='filesystem',
-    SESSION_FILE_DIR=os.path.join(os.getcwd(), '.flask_session'),
+    SESSION_FILE_DIR='.flask_session',
     SESSION_PERMANENT=False,
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
     SESSION_USE_SIGNER=True,
-    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_SECURE=False,  # Changed for local development compatibility
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
     MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max request size
-    SESSION_FILE_THRESHOLD=500  # Limit number of session files
+    SESSION_FILE_THRESHOLD=500,  # Limit number of session files
+    SESSION_REFRESH_EACH_REQUEST=True,
+    SEND_FILE_MAX_AGE_DEFAULT=43200,  # 12 hours cache for static files
+    STATIC_FOLDER_PATH=os.path.join(os.getcwd(), 'static')
 )
+
+# Enhanced error handlers
+@app.errorhandler(404)
+def handle_404_error(error):
+    logger.error(f"404 error occurred: {str(error)}")
+    if request.path.startswith('/static/'):
+        return jsonify({
+            'valid': False,
+            'message': '静的ファイルが見つかりませんでした'
+        }), 404
+    return jsonify({
+        'valid': False,
+        'message': 'ページが見つかりませんでした'
+    }), 404
+
+@app.errorhandler(500)
+def handle_500_error(error):
+    logger.error(f"500 error occurred: {str(error)}", exc_info=True)
+    return jsonify({
+        'valid': False,
+        'message': 'サーバーエラーが発生しました'
+    }), 500
+
+# Configure logging for static file access
+logging.getLogger('werkzeug').setLevel(logging.INFO)
 
 @app.errorhandler(Exception)
 def handle_error(error):
