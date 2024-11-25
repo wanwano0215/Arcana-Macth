@@ -21,35 +21,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function preloadImages() {
     // Essential images to preload immediately
     const essentialImages = [
-        '/static/images/カード裏面.webp',
+        '/static/images/カード裏面.png',
         '/static/images/拡大鏡.png'
     ];
-
-    // カードイメージマッピングの更新
-    const cardImageMap = {
-        0: '0愚者',
-        1: '1魔術師',
-        2: '2女教皇',
-        3: '3女帝',
-        4: '4皇帝',
-        5: '5教皇',
-        6: '6恋人',
-        7: '7戦車',
-        8: '8力',
-        9: '9隠者',
-        10: '10運命の輪',
-        11: '11正義',
-        12: '12吊るされた男',
-        13: '13死神',
-        14: '14節制',
-        15: '15悪魔',
-        16: '16塔',
-        17: '17星',
-        18: '18月',
-        19: '19太陽',
-        20: '20審判',
-        21: '21世界'
-    };
 
     // Create an IntersectionObserver for lazy loading with optimized settings
     const imageObserver = new IntersectionObserver((entries, observer) => {
@@ -59,33 +33,21 @@ async function preloadImages() {
                 if (img.dataset.src) {
                     // Add loading attribute for better performance
                     img.loading = 'lazy';
-                    // Cache the image URL and update to .webp extension
+                    // Cache the image URL
                     const imageUrl = img.dataset.src;
-if (img.dataset.src) {
-    img.src = img.dataset.src.endsWith('.webp') ? img.dataset.src : img.dataset.src.replace('.png', '.webp');
-}
-                    // Use requestIdleCallback for non-critical image loading
-                    if ('requestIdleCallback' in window) {
-                        requestIdleCallback(() => {
-                            img.src = imageUrl;
-                            img.removeAttribute('data-src');
-                            observer.unobserve(img);
-                        });
-                    } else {
-                        requestAnimationFrame(() => {
-                            img.src = imageUrl;
-                            img.removeAttribute('data-src');
-                            observer.unobserve(img);
-                        });
-                    }
+                    requestAnimationFrame(() => {
+                        img.src = imageUrl;
+                        img.removeAttribute('data-src');
+                        observer.unobserve(img);
+                    });
                 }
             }
         });
     }, {
-        rootMargin: '150px 0px', // Further increased margin for earlier loading
-        threshold: 0.01, // Keep reduced threshold
-        trackVisibility: true,
-        delay: 50 // Reduced delay for faster response
+        rootMargin: '100px 0px', // Increased margin for earlier loading
+        threshold: 0.01, // Reduced threshold for faster trigger
+        trackVisibility: true, // Enable visibility tracking
+        delay: 100 // Add small delay to batch process entries
     });
 
     // Preload essential images first
@@ -130,7 +92,7 @@ if (img.dataset.src) {
     // Audio elements
     let cardFlipSound, matchSound, bgmPlayer;
 
-    // Card image mapping - without file extensions
+    // Card image mapping
     const cardImageMap = {
         0: '0愚者',
         1: '1魔術師',
@@ -308,7 +270,7 @@ initializeAudio();
         const cardFront = document.createElement('div');
         cardFront.className = 'card-front';
         const frontImg = document.createElement('img');
-        frontImg.src = '/static/images/カード裏面.webp';
+        frontImg.src = '/static/images/カード裏面.png';
         frontImg.alt = 'card back';
         frontImg.className = 'card-img';
         cardFront.appendChild(frontImg);
