@@ -9,10 +9,11 @@ from datetime import datetime, timedelta
 import logging
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Initialize Flask app with explicit static folder
-app = Flask(__name__, 
-    static_folder='static',
-    static_url_path='/static'
+# Initialize Flask app
+app = Flask(__name__)
+app.config.update(
+    STATIC_FOLDER='static',
+    STATIC_URL_PATH='/static'
 )
 CORS(app)
 
@@ -79,6 +80,13 @@ def handle_error(error):
 
 @app.before_request
 def before_request():
+    # Ensure static directories exist
+    if not os.path.exists(app.static_folder):
+        os.makedirs(app.static_folder)
+    if not os.path.exists(os.path.join(app.static_folder, 'images')):
+        os.makedirs(os.path.join(app.static_folder, 'images'))
+    
+    # Session initialization
     if not session.get('id'):
         session['id'] = os.urandom(16).hex()
     if not session.get('game_state'):
