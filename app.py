@@ -88,16 +88,26 @@ def initialize_session():
 
 @app.before_request
 def before_request():
-    # Ensure static directories exist
-    if not os.path.exists(app.static_folder):
-        os.makedirs(app.static_folder)
-    if not os.path.exists(os.path.join(app.static_folder, 'images')):
-        os.makedirs(os.path.join(app.static_folder, 'images'))
-    
-    # Initialize session
-    if not session.get('id'):
-        session['id'] = os.urandom(16).hex()
-    initialize_session()
+    try:
+        if not os.path.exists(app.static_folder):
+            os.makedirs(app.static_folder, exist_ok=True)
+        if not os.path.exists(os.path.join(app.static_folder, 'images')):
+            os.makedirs(os.path.join(app.static_folder, 'images'), exist_ok=True)
+        
+        # セッションの初期化
+        if 'id' not in session:
+            session['id'] = os.urandom(16).hex()
+            session.modified = True
+        
+        # ゲーム状態の初期化
+        if 'game_state' not in session:
+            game_state = GameState()
+            session['game_state'] = game_state.to_dict()
+            session.modified = True
+            
+    except Exception as e:
+        logger.error(f"Before request error: {str(e)}")
+        return jsonify({'error': 'Server error'}), 500
 
 # Ensure session directory exists
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
