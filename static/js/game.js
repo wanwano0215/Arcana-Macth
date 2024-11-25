@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 const imageCache = new Map();
 
 async function preloadImages() {
+    const imageCache = new Map();
+    const loadPriority = new Map();
+    
     try {
         const cardBackImage = '/static/images/カード裏面.png';
         const magnifierImage = '/static/images/拡大鏡.png';
@@ -31,13 +34,12 @@ async function preloadImages() {
             preloadSingleImage(magnifierImage)
         ]);
 
-        // カード画像を非同期で読み込む
+        // カード画像を読み込む
         const cardLoadPromises = Object.entries(cardImageMap).map(([value, name]) => {
             const imagePath = `/static/images/${name}.png`;
             return preloadSingleImage(imagePath);
         });
 
-        // カード画像の読み込みを待機
         await Promise.all(cardLoadPromises);
         
         // カードを生成して表示
@@ -48,10 +50,13 @@ async function preloadImages() {
     }
 }
 
-// カード初期化関数を追加
+// カード初期化関数を修正
 function initializeCards() {
     const cardGrid = document.getElementById('card-grid');
-    if (!cardGrid) return;
+    if (!cardGrid) {
+        console.error('Card grid element not found');
+        return;
+    }
 
     // 既存のカードをクリア
     cardGrid.innerHTML = '';
@@ -59,7 +64,9 @@ function initializeCards() {
     // 44枚のカードを生成（22ペア）
     for (let i = 0; i < 44; i++) {
         const card = createCard(i);
-        cardGrid.appendChild(card);
+        if (card) {
+            cardGrid.appendChild(card);
+        }
     }
 }
 
