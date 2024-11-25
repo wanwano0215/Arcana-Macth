@@ -282,7 +282,7 @@ initializeAudio();
         const cardFront = document.createElement('div');
         cardFront.className = 'card-front';
         const frontImg = document.createElement('img');
-        frontImg.src = '/static/images/カード裏面.webp';
+        frontImg.src = '/static/images/カード裏面.jpg';
         frontImg.alt = 'card back';
         frontImg.className = 'card-img';
         cardFront.appendChild(frontImg);
@@ -292,6 +292,10 @@ initializeAudio();
         const backImg = document.createElement('img');
         backImg.alt = 'card front';
         backImg.className = 'card-img';
+        backImg.onerror = function() {
+            console.error(`Failed to load image: ${backImg.src}`);
+            backImg.src = '/static/images/error_card.jpg';
+        };
         cardBack.appendChild(backImg);
         
         cardInner.appendChild(cardFront);
