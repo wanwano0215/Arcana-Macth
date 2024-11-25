@@ -27,15 +27,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const playerScoreElement = document.getElementById('player-score');
     const statusMessage = document.getElementById('status-message');
 
-    // Game state with strict control
-    const gameState = {
-        isProcessing: false,
-        isFlipping: false,
-        firstCardFlipped: false,
-        lastClickTime: 0,
-        gameStartTime: null,
-        animationFrameId: null
-    };
+    // Game state
+    let isProcessing = false;
+    let firstCardFlipped = false;
+    let lastClickTime = 0;
+    let gameStartTime = null;
 
     // Audio elements
     let cardFlipSound, matchSound, bgmPlayer;
@@ -65,61 +61,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         20: '20審判',
         21: '21世界'
     };
-// Initialize game board
-function initializeGame() {
-    const cardGrid = document.getElementById('card-grid');
-    if (!cardGrid) return;
-    
-    cardGrid.innerHTML = '';
-    for (let i = 0; i < 44; i++) {  // 22 pairs of cards
-        const card = createCard(i);
-        cardGrid.appendChild(card);
-    }
-}
 
-// Call initialization when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    initializeGame();
-    preloadImages();
-});
-
-// Image preloading
-const preloadImages = () => {
-    console.log('Starting image preload...');
-    const imageUrls = Object.values(cardImageMap).map(name => `/static/images/${name}.png`);
-    imageUrls.push('/static/images/カード裏面.png');
-    imageUrls.push('/static/images/拡大鏡.png');
-    
-    const preloadPromises = imageUrls.map(url => {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => {
-                console.log(`Loaded: ${url}`);
-                resolve(url);
-            };
-            img.onerror = () => {
-                console.warn(`Failed to load: ${url}`);
-                reject(url);
-            };
-            img.src = url;
-        });
-    });
-
-    return Promise.allSettled(preloadPromises)
-        .then(results => {
-            const failed = results.filter(r => r.status === 'rejected');
-            if (failed.length > 0) {
-                console.warn(`Failed to load ${failed.length} images`);
-            } else {
-                console.log('All images loaded successfully');
-            }
-        });
-};
-
-// Call preloadImages when the game starts
-document.addEventListener('DOMContentLoaded', () => {
-    preloadImages();
-});
     // Initialize Panzoom elements
     const cardModal = document.getElementById('cardModal');
     const panzoomElement = document.querySelector('.panzoom');
@@ -232,24 +174,16 @@ initializeAudio();
     }
 
     function updateTimer() {
-        if (!gameState.gameStartTime) return;
+        if (!gameStartTime) return;
         
-        const elapsed = Math.floor((Date.now() - gameState.gameStartTime) / 1000);
+        const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
         const minutes = Math.floor(elapsed / 60);
         const seconds = elapsed % 60;
         
         document.getElementById('timer-display').textContent = 
             `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        gameState.animationFrameId = requestAnimationFrame(updateTimer);
-    }
-
-    // Cleanup animation frame on game end
-    function cleanupAnimations() {
-        if (gameState.animationFrameId) {
-            cancelAnimationFrame(gameState.animationFrameId);
-            gameState.animationFrameId = null;
-        }
+        requestAnimationFrame(updateTimer);
     }
 
     // Card creation and manipulation
@@ -405,69 +339,92 @@ initializeAudio();
 
     // Card interaction handlers
     async function handleCardClick(event) {
-    try {
+        const currentTime = Date.now();
+        if (currentTime - lastClickTime < MIN_CLICK_INTERVAL) {
+            handleRateLimitError(event.target.closest('.memory-card'), '操作が早すぎます', 0.2);
+            return;
+        }
+        lastClickTime = currentTime;
+
         const card = event.target.closest('.memory-card');
-        if (!card || card.classList.contains('loading') || card.classList.contains('matched')) {
+        if (!card) return;
+
+        // Show enlarged view for matched cards
+        if (card.classList.contains('matched')) {
+            showEnlargedCard(card);
             return;
         }
 
-        // 既にめくられているカードの数をチェック
-        const flippedCards = document.querySelectorAll('.memory-card.flipped:not(.matched)');
-        if (flippedCards.length >= 2) {
-            console.log('Already two cards flipped');
-            return;
-        }
+        if (isProcessing || card.classList.contains('flipped')) return;
 
-        const cardIndex = parseInt(card.dataset.index);
-        if (isNaN(cardIndex)) {
-            console.error('Invalid card index');
-            return;
-        }
-
+        isProcessing = true;
         showLoadingState(card, true);
         
         try {
-            const response = await fetch(`/flip/${cardIndex}`, {
+            const cardIndex = parseInt(card.dataset.index);
+            const data = await makeRequestWithRetry(`/flip/${cardIndex}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
             if (data.valid) {
                 await flipCard(card, data.card_value);
-                await playCardFlipSound();
-                
-                if (data.is_match) {
-                    await handleMatch(card, data);
-                } else if (data.turn_complete) {
-                    await handleNoMatch(card, data);
+                if (!firstCardFlipped) {
+                    firstCardFlipped = true;
+                    startTimer();
+                    statusMessage.textContent = data.message;
+                    isProcessing = false;
+                    return;
                 }
-                
-                if (data.game_over) {
-                    handleGameOver(data);
+
+                firstCardFlipped = false;
+                if (data.turn_complete) {
+                    if (data.is_match) {
+                        const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
+                        markAsMatched(card);
+                        markAsMatched(firstCard);
+                        updateScore(data.player_score);
+                        await playMatchSound();
+                        statusMessage.textContent = '🎉 Match! 🎉';
+                    } else {
+                        await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
+                        const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
+                        // Keep the MATCH_DISPLAY_DURATION delay
+                        await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
+                        // Make sure both cards are unflipped simultaneously
+                        await Promise.all([
+                            unflipCard(card),
+                            unflipCard(firstCard)
+                        ]);
+                        statusMessage.textContent = 'カードを2枚めくってください';
+                    }
+
+                    if (data.game_over) {
+                        stopTimer();
+                        statusMessage.textContent = data.message;
+                        statusMessage.classList.add('game-clear');
+                        cleanupAudio();
+                    }
                 }
+            } else {
+                handleRateLimitError(card, data.message, data.backoff || 0.2);
             }
         } catch (error) {
-            console.error('Card flip error:', error);
-            statusMessage.textContent = 'カードをめくることができません。もう一度お試しください。';
-            statusMessage.classList.add('alert-warning');
-            card.classList.remove('flipped');
+            if (error.message === 'Rate limit exceeded') {
+                handleRateLimitError(card, '操作が早すぎます', 0.2);
+            } else {
+                statusMessage.textContent = 'エラーが発生しました';
+                statusMessage.classList.add('alert-danger');
+            }
         } finally {
+            isProcessing = false;
             showLoadingState(card, false);
         }
-    } catch (error) {
-        console.error('General error:', error);
     }
-}
 
-// Card state updates
+    // Card state updates
     async function flipCard(card, value) {
         const backFace = card.querySelector('.card-back img');
         const imageName = cardImageMap[value];
