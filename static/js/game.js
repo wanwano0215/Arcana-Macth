@@ -65,6 +65,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         20: '20審判',
         21: '21世界'
     };
+// Initialize game board
+function initializeGame() {
+    const cardGrid = document.getElementById('card-grid');
+    if (!cardGrid) return;
+    
+    cardGrid.innerHTML = '';
+    for (let i = 0; i < 44; i++) {  // 22 pairs of cards
+        const card = createCard(i);
+        cardGrid.appendChild(card);
+    }
+}
+
+// Call initialization when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    initializeGame();
+    preloadImages();
+});
 
 // Image preloading
 const preloadImages = () => {
@@ -466,12 +483,8 @@ initializeAudio();
         console.error('General error:', error);
     }
 }
-            const loadingCards = document.querySelectorAll('.memory-card.loading');
-            loadingCards.forEach(c => c.classList.remove('loading'));
-        }
-    }
 
-    // Card state updates
+// Card state updates
     async function flipCard(card, value) {
         const backFace = card.querySelector('.card-back img');
         const imageName = cardImageMap[value];
