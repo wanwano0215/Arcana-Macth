@@ -23,7 +23,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configure Flask-Session with filesystem storage
+# Configure Flask-Session with enhanced security and stability
 app.config.update(
     SECRET_KEY=os.environ.get("FLASK_SECRET_KEY", "memory-game-secret"),
     SESSION_TYPE='filesystem',
@@ -31,9 +31,29 @@ app.config.update(
     SESSION_PERMANENT=False,
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
     SESSION_USE_SIGNER=True,
+    SESSION_COOKIE_SECURE=True,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
     MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max request size
     SESSION_FILE_THRESHOLD=500  # Limit number of session files
 )
+
+@app.errorhandler(Exception)
+def handle_error(error):
+    logger.error(f"Unexpected error: {str(error)}", exc_info=True)
+    return jsonify({
+        'valid': False,
+        'message': 'エラーが発生しました。もう一度お試しください。'
+    }), 500
+
+@app.before_request
+def before_request():
+    if not session.get('id'):
+        session['id'] = os.urandom(16).hex()
+    if not session.get('game_state'):
+        game_state = GameState()
+        session['game_state'] = game_state.to_dict()
+    session.modified = True
 
 # Ensure session directory exists
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)

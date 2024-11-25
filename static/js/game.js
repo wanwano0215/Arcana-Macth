@@ -21,9 +21,13 @@ document.addEventListener('DOMContentLoaded', async function() {
 const imageCache = new Map();
 
 async function preloadImages() {
-    const imageCache = new Map();
-    const loadPriority = new Map();
-    let loadedImages = 0;
+    try {
+        const retries = 3;
+        for (let i = 0; i < retries; i++) {
+            try {
+                const imageCache = new Map();
+                const loadPriority = new Map();
+                let loadedImages = 0;
     
     // 優先度の設定
     function setPriority(cardValue) {
@@ -92,8 +96,17 @@ async function preloadImages() {
         // 優先度の高い画像から順に読み込む
         await Promise.all(loadPromises);
 
+    return;  // 成功したら終了
+            } catch (error) {
+                console.error(`Attempt ${i + 1} failed:`, error);
+                if (i === retries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, 1000));  // 1秒待機
+            }
+        }
     } catch (error) {
-        console.error('Image loading error:', error);
+        console.error('Image preloading failed:', error);
+        statusMessage.textContent = '画像の読み込みに失敗しました。ページを更新してください。';
+        statusMessage.classList.add('alert-danger');
     }
 }
 
