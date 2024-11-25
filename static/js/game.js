@@ -101,7 +101,7 @@ async function preloadImages() {
     // Audio elements
     let cardFlipSound, matchSound, bgmPlayer;
 
-    // Card image mapping
+    // Card image mapping - without file extensions
     const cardImageMap = {
         0: '0愚者',
         1: '1魔術師',
