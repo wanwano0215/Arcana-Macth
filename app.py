@@ -119,9 +119,8 @@ def rate_limit():
 @app.after_request
 def add_header(response):
     """Add caching headers to responses"""
-    if request.path.startswith('/static/'):
-        # 静的ファイルのキャッシュを1週間に設定
-        response.headers['Cache-Control'] = 'public, max-age=604800'
+    if 'Cache-Control' not in response.headers:
+        response.headers['Cache-Control'] = 'public, max-age=300'
     return response
 
 @app.route('/')

@@ -17,99 +17,29 @@ const loadPanzoom = () => {
 document.addEventListener('DOMContentLoaded', async function() {
     // Preload images in the background
     preloadImages().catch(console.error);
-// キャッシュを保持する
-const imageCache = new Map();
-
+// Preload images function
 async function preloadImages() {
-    try {
-        const cardBackImage = '/static/images/カード裏面.png';
-        const magnifierImage = '/static/images/拡大鏡.png';
+    const imageUrls = [
+        '/static/images/カード裏面.png',
+        '/static/images/拡大鏡.png',
+        ...Object.values(cardImageMap).map(name => `/static/images/${name}.png`)
+    ];
 
-        // 重要な画像を先に読み込む
-        await Promise.all([
-            preloadSingleImage(cardBackImage),
-            preloadSingleImage(magnifierImage)
-        ]);
-
-        // カード画像を読み込む
-        const cardLoadPromises = Object.entries(cardImageMap).map(([value, name]) => {
-            const imagePath = `/static/images/${name}.png`;
-            return preloadSingleImage(imagePath);
+    const imagePromises = imageUrls.map(url => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(url);
+            img.onerror = () => reject(url);
+            img.src = url;
         });
-
-        await Promise.all(cardLoadPromises);
-        
-        // カードを生成して表示
-        initializeCards();
-        console.log('All images loaded successfully');
-
-    } catch (error) {
-        console.error('Image loading error:', error);
-    } finally {
-        isProcessing = false;
-    }
-}
-
-// カード生成関数の修正
-function initializeCards() {
-    const cardGrid = document.getElementById('card-grid');
-    if (!cardGrid) {
-        console.error('Card grid element not found');
-        return;
-    }
-
-    cardGrid.innerHTML = '';
-    
-    // カードの配置
-    for (let i = 0; i < 44; i++) {
-        const card = createCard(i);
-        if (card) {
-            cardGrid.appendChild(card);
-        }
-    }
-}
-
-// カード初期化関数を修正
-function initializeCards() {
-    const cardGrid = document.getElementById('card-grid');
-    if (!cardGrid) {
-        console.error('Card grid element not found');
-        return;
-    }
-
-    // 既存のカードをクリア
-    cardGrid.innerHTML = '';
-
-    // 44枚のカードを生成（22ペア）
-    for (let i = 0; i < 44; i++) {
-        const card = createCard(i);
-        if (card) {
-            cardGrid.appendChild(card);
-        }
-    }
-}
-
-// 画像のプリロード関数を最適化
-function preloadSingleImage(src) {
-    if (imageCache.has(src)) {
-        return Promise.resolve(src);
-    }
-
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-            imageCache.set(src, true);
-            resolve(src);
-        };
-        img.onerror = () => reject(src);
-        img.src = src;
     });
-}
 
-// カード画像のプリロード
-function preloadCardImage(cardValue) {
-    const imagePath = `/static/images/${cardImageMap[cardValue]}.png`;
-    return preloadSingleImage(imagePath);
+    try {
+        await Promise.all(imagePromises);
+        console.log('All images preloaded successfully');
+    } catch (error) {
+        console.warn('Some images failed to preload:', error);
+    }
 }
 
     // Constants
