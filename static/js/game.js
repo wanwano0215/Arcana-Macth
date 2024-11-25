@@ -17,8 +17,8 @@ const loadPanzoom = () => {
 document.addEventListener('DOMContentLoaded', async function() {
     // Preload images in the background
     preloadImages().catch(console.error);
-// Preload images function
 async function preloadImages() {
+    console.log('Loading audio files...');
     const cardBackImage = '/static/images/カード裏面.png';
     const magnifierImage = '/static/images/拡大鏡.png';
 
@@ -47,6 +47,8 @@ async function preloadImages() {
     document.querySelectorAll('.memory-card').forEach(card => {
         imageObserver.observe(card);
     });
+
+    return imageObserver;
 }
 
 // 個別の画像プリロード関数
@@ -63,25 +65,6 @@ function preloadSingleImage(src) {
 function preloadCardImage(cardValue) {
     const imagePath = `/static/images/${cardImageMap[cardValue]}.png`;
     return preloadSingleImage(imagePath);
-}
-    const essentialPromises = essentialImages.map(url => {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.onload = () => resolve(url);
-            img.onerror = () => reject(url);
-            img.src = url;
-        });
-    });
-
-    try {
-        await Promise.all(essentialPromises);
-        console.log('Essential images preloaded successfully');
-    } catch (error) {
-        console.warn('Some essential images failed to preload:', error);
-    }
-
-    // Return the observer for use in card creation
-    return imageObserver;
 }
 
     // Constants
