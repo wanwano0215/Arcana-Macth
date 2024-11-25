@@ -114,16 +114,15 @@ def before_request():
             session.modified = True
         
         # ゲーム状態の初期化
-        if 'game_state' not in session:
-            game_state = GameState()
-            session['game_state'] = game_state.to_dict()
-            session.modified = True
-            
+        if request.endpoint != 'static':
+            if 'game_state' not in session:
+                game_state = GameState()
+                session['game_state'] = game_state.to_dict()
+                session.modified = True
     except Exception as e:
         logger.error(f"Before request error: {str(e)}")
         return jsonify({'error': 'Server error'}), 500
     finally:
-        # セッションの永続化を確実に
         if session.modified:
             session.permanent = True
 

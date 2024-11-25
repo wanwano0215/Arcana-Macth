@@ -472,10 +472,10 @@ body {
     position: absolute;
     top: 2px;
     right: 2px;
-    width: 16px;  /* Reduced size */
-    height: 16px; /* Reduced size */
+    width: 12px;  /* Further reduced size */
+    height: 12px; /* Further reduced size */
     cursor: pointer;
-    opacity: 0.6;
+    opacity: 0.5;  /* Slightly reduced opacity */
     transition: opacity 0.3s ease;
     z-index: 2;
     background: rgba(255, 255, 255, 0.7);
