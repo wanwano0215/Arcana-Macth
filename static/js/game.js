@@ -25,6 +25,32 @@ async function preloadImages() {
         '/static/images/拡大鏡.png'
     ];
 
+    // カードイメージマッピングの更新
+    const cardImageMap = {
+        0: '0愚者',
+        1: '1魔術師',
+        2: '2女教皇',
+        3: '3女帝',
+        4: '4皇帝',
+        5: '5教皇',
+        6: '6恋人',
+        7: '7戦車',
+        8: '8力',
+        9: '9隠者',
+        10: '10運命の輪',
+        11: '11正義',
+        12: '12吊るされた男',
+        13: '13死神',
+        14: '14節制',
+        15: '15悪魔',
+        16: '16塔',
+        17: '17星',
+        18: '18月',
+        19: '19太陽',
+        20: '20審判',
+        21: '21世界'
+    };
+
     // Create an IntersectionObserver for lazy loading with optimized settings
     const imageObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
