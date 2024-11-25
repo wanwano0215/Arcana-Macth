@@ -15,6 +15,33 @@ const loadPanzoom = () => {
 };
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // Preload images in the background
+    preloadImages().catch(console.error);
+// Preload images function
+async function preloadImages() {
+    const imageUrls = [
+        '/static/images/カード裏面.png',
+        '/static/images/拡大鏡.png',
+        ...Object.values(cardImageMap).map(name => `/static/images/${name}.png`)
+    ];
+
+    const imagePromises = imageUrls.map(url => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(url);
+            img.onerror = () => reject(url);
+            img.src = url;
+        });
+    });
+
+    try {
+        await Promise.all(imagePromises);
+        console.log('All images preloaded successfully');
+    } catch (error) {
+        console.warn('Some images failed to preload:', error);
+    }
+}
+
     // Constants
     const MIN_CLICK_INTERVAL = 200;
     const FLIP_ANIMATION_DURATION = 500;
