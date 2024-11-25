@@ -281,10 +281,10 @@ body {
 /* Magnifying glass icon */
 .memory-card .magnifier {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 16px;
-    height: 16px;
+    top: 2px;
+    right: 2px;
+    width: 12px;
+    height: 12px;
     background-color: transparent;
     border-radius: 50%;
     display: none;
@@ -293,7 +293,7 @@ body {
     cursor: pointer;
     z-index: 2;
     transition: all 0.3s ease;
-    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9));
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
     animation: glowPulse 1.5s infinite;
 }
 

@@ -405,108 +405,67 @@ initializeAudio();
 
     // Card interaction handlers
     async function handleCardClick(event) {
-        const currentTime = Date.now();
-        if (currentTime - gameState.lastClickTime < MIN_CLICK_INTERVAL) {
-            handleRateLimitError(event.target.closest('.memory-card'), '操作が早すぎます', 0.2);
-            return;
-        }
-        gameState.lastClickTime = currentTime;
-
+    try {
         const card = event.target.closest('.memory-card');
-        if (!card) return;
-
-        // Show enlarged view for matched cards
-        if (card.classList.contains('matched')) {
-            showEnlargedCard(card);
+        if (!card || card.classList.contains('loading') || card.classList.contains('matched')) {
             return;
         }
 
-        const flippedCards = document.querySelectorAll('.memory-card.flipped:not(.matched)').length;
-        
-        // Only control after second card
-        if (flippedCards >= 2 || card.classList.contains('flipped')) return;
-        
-        // Set processing state only when flipping second card
-        if (flippedCards === 1) {
-            gameState.isProcessing = true;
+        const cardIndex = parseInt(card.dataset.index);
+        if (isNaN(cardIndex)) {
+            console.error('Invalid card index');
+            return;
         }
-        gameState.isFlipping = true;
+
+        // カードがすでにめくられている場合は処理しない
+        if (card.classList.contains('flipped')) {
+            return;
+        }
+
         showLoadingState(card, true);
         
         try {
-            const cardIndex = parseInt(card.dataset.index);
-            const data = await makeRequestWithRetry(`/flip/${cardIndex}`, {
+            const response = await fetch(`/flip/${cardIndex}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
             if (data.valid) {
                 await flipCard(card, data.card_value);
-                if (!firstCardFlipped) {
-                    firstCardFlipped = true;
-                    startTimer();
-                    statusMessage.textContent = data.message;
-                    isProcessing = false;
-                    return;
+                await playCardFlipSound();
+                
+                if (data.is_match) {
+                    await handleMatch(card, data);
+                } else if (data.turn_complete) {
+                    await handleNoMatch(card, data);
+                }
+                
+                if (data.game_over) {
+                    handleGameOver(data);
                 }
 
-                firstCardFlipped = false;
-                if (data.turn_complete) {
-                    if (data.is_match) {
-                        const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
-                        markAsMatched(card);
-                        markAsMatched(firstCard);
-                        updateScore(data.player_score);
-                        await playMatchSound();
-                        statusMessage.textContent = '🎉 Match! 🎉';
-                    } else {
-                        await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
-                        const firstCard = document.querySelector(`[data-index="${data.first_card}"]`);
-                        // Keep the MATCH_DISPLAY_DURATION delay
-                        await new Promise(resolve => setTimeout(resolve, MATCH_DISPLAY_DURATION));
-                        // Make sure both cards are unflipped simultaneously
-                        await Promise.all([
-                            unflipCard(card),
-                            unflipCard(firstCard)
-                        ]);
-                        statusMessage.textContent = 'カードを2枚めくってください';
-                    }
-
-                    if (data.game_over) {
-                        stopTimer();
-                        statusMessage.textContent = data.message;
-                        statusMessage.classList.add('game-clear');
-                        cleanupAudio();
-                    }
-                }
-            } else {
-                handleRateLimitError(card, data.message, data.backoff || 0.2);
+                statusMessage.textContent = data.message;
             }
         } catch (error) {
             console.error('Card flip error:', error);
-            
-            if (error.message === 'Rate limit exceeded') {
-                handleRateLimitError(card, '操作が早すぎます', 0.2);
-            } else if (error.name === 'TypeError' || error.name === 'NetworkError') {
-                statusMessage.textContent = 'ネットワークエラーが発生しました。再度お試しください。';
-            } else {
-                // Suppress generic error messages for better UX
-                statusMessage.textContent = 'カードをめくることができません。少し待ってから試してください。';
-            }
-            
-            // Reset card state
-            card.classList.remove('flipped', 'flip-complete');
+            card.classList.remove('flipped');
+            statusMessage.textContent = 'カードをめくることができません。もう一度お試しください。';
             statusMessage.classList.add('alert-warning');
-            setTimeout(() => statusMessage.classList.remove('alert-warning'), 3000);
-            
         } finally {
-            isProcessing = false;
             showLoadingState(card, false);
-            gameState.isFlipping = false;
-            
-            // Clean up any lingering states
+        }
+    } catch (error) {
+        console.error('General error:', error);
+    }
+}
             const loadingCards = document.querySelectorAll('.memory-card.loading');
             loadingCards.forEach(c => c.classList.remove('loading'));
         }
