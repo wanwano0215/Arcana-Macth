@@ -78,6 +78,14 @@ def handle_error(error):
         'message': 'エラーが発生しました。もう一度お試しください。'
     }), 500
 
+def initialize_session():
+    """Initialize or recover session state"""
+    if 'game_state' not in session:
+        game_state = GameState()
+        session['game_state'] = game_state.to_dict()
+        session.modified = True
+    return session['game_state']
+
 @app.before_request
 def before_request():
     # Ensure static directories exist
@@ -86,13 +94,10 @@ def before_request():
     if not os.path.exists(os.path.join(app.static_folder, 'images')):
         os.makedirs(os.path.join(app.static_folder, 'images'))
     
-    # Session initialization
+    # Initialize session
     if not session.get('id'):
         session['id'] = os.urandom(16).hex()
-    if not session.get('game_state'):
-        game_state = GameState()
-        session['game_state'] = game_state.to_dict()
-    session.modified = True
+    initialize_session()
 
 # Ensure session directory exists
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
