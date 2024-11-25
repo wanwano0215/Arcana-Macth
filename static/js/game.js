@@ -21,79 +21,45 @@ document.addEventListener('DOMContentLoaded', async function() {
 const imageCache = new Map();
 
 async function preloadImages() {
-    const imageCache = new Map();
-    const loadPriority = new Map();
-    let loadedImages = 0;
-    
-    // 優先度の設定
-    function setPriority(cardValue) {
-        const visibleCards = Array.from(document.querySelectorAll('.memory-card'))
-            .filter(card => isElementInViewport(card));
-        const cardIndex = visibleCards.findIndex(card => card.dataset.cardValue === cardValue);
-        return cardIndex > -1 ? 1 : 0;
-    }
-
-    // 画像のバッファリング
-    async function bufferImage(src, priority) {
-        if (imageCache.has(src)) return imageCache.get(src);
-        
-        const img = new Image();
-        const promise = new Promise((resolve, reject) => {
-            img.onload = () => {
-                loadedImages++;
-                updateLoadingProgress(loadedImages);
-                resolve(img);
-            };
-            img.onerror = reject;
-        });
-        
-        img.src = src;
-        imageCache.set(src, promise);
-        loadPriority.set(src, priority);
-        return promise;
-    }
-
-    // 画像の読み込み状況の更新
-    function updateLoadingProgress(loaded) {
-        const total = Object.keys(cardImageMap).length;
-        const progress = Math.floor((loaded / total) * 100);
-        console.log(`Loading progress: ${progress}%`);
-    }
-
-    // 表示されている要素かどうかの判定
-    function isElementInViewport(el) {
-        const rect = el.getBoundingClientRect();
-        return (
-            rect.top >= 0 &&
-            rect.left >= 0 &&
-            rect.bottom <= window.innerHeight &&
-            rect.right <= window.innerWidth
-        );
-    }
-
-    // メイン処理
     try {
         const cardBackImage = '/static/images/カード裏面.png';
         const magnifierImage = '/static/images/拡大鏡.png';
 
         // 重要な画像を先に読み込む
         await Promise.all([
-            bufferImage(cardBackImage, 2),
-            bufferImage(magnifierImage, 2)
+            preloadSingleImage(cardBackImage),
+            preloadSingleImage(magnifierImage)
         ]);
 
         // カード画像を非同期で読み込む
-        const loadPromises = Object.entries(cardImageMap).map(([value, name]) => {
-            const priority = setPriority(value);
+        const cardLoadPromises = Object.entries(cardImageMap).map(([value, name]) => {
             const imagePath = `/static/images/${name}.png`;
-            return bufferImage(imagePath, priority);
+            return preloadSingleImage(imagePath);
         });
 
-        // 優先度の高い画像から順に読み込む
-        await Promise.all(loadPromises);
+        // カード画像の読み込みを待機
+        await Promise.all(cardLoadPromises);
+        
+        // カードを生成して表示
+        initializeCards();
 
     } catch (error) {
         console.error('Image loading error:', error);
+    }
+}
+
+// カード初期化関数を追加
+function initializeCards() {
+    const cardGrid = document.getElementById('card-grid');
+    if (!cardGrid) return;
+
+    // 既存のカードをクリア
+    cardGrid.innerHTML = '';
+
+    // 44枚のカードを生成（22ペア）
+    for (let i = 0; i < 44; i++) {
+        const card = createCard(i);
+        cardGrid.appendChild(card);
     }
 }
 
