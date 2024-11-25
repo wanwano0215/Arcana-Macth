@@ -66,6 +66,27 @@ document.addEventListener('DOMContentLoaded', async function() {
         21: '21世界'
     };
 
+// Image preloading
+const preloadImages = () => {
+    const imageUrls = Object.values(cardImageMap).map(name => `/static/images/${name}.png`);
+    imageUrls.push('/static/images/カード裏面.png');
+    imageUrls.push('/static/images/拡大鏡.png');
+    
+    return Promise.all(imageUrls.map(url => {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(url);
+            img.onerror = () => reject(url);
+            img.src = url;
+        });
+    })).then(() => console.log('All images preloaded successfully'))
+    .catch(error => console.warn('Some images failed to preload:', error));
+};
+
+// Call preloadImages when the game starts
+document.addEventListener('DOMContentLoaded', () => {
+    preloadImages();
+});
     // Initialize Panzoom elements
     const cardModal = document.getElementById('cardModal');
     const panzoomElement = document.querySelector('.panzoom');
@@ -367,9 +388,15 @@ initializeAudio();
             return;
         }
 
-        if (gameState.isProcessing || gameState.isFlipping || card.classList.contains('flipped')) return;
-
-        gameState.isProcessing = true;
+        const flippedCards = document.querySelectorAll('.memory-card.flipped:not(.matched)').length;
+        
+        // Only control after second card
+        if (flippedCards >= 2 || card.classList.contains('flipped')) return;
+        
+        // Set processing state only when flipping second card
+        if (flippedCards === 1) {
+            gameState.isProcessing = true;
+        }
         gameState.isFlipping = true;
         showLoadingState(card, true);
         
