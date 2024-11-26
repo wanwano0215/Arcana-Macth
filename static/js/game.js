@@ -335,17 +335,33 @@ initializeAudio();
 
     function showEnlargedCard(card) {
         try {
-            const cardImage = card.querySelector('.card-back img');
-            if (cardImage && cardImage.src) {
-                const enlargedCard = document.getElementById('enlarged-card');
-                enlargedCard.src = cardImage.src;
-                const modalInstance = new bootstrap.Modal(cardModal);
-                modalInstance.show();
+            // カードが裏返されているかチェック
+            if (!card.classList.contains('flipped') && !card.classList.contains('matched')) {
+                console.log('Card is not flipped or matched');
+                return;
             }
+
+            const cardImage = card.querySelector('.card-back img');
+            if (!cardImage || !cardImage.src) {
+                console.log('Card image not found');
+                return;
+            }
+
+            const enlargedCard = document.getElementById('enlarged-card');
+            if (!enlargedCard) {
+                console.log('Enlarged card element not found');
+                return;
+            }
+
+            enlargedCard.src = cardImage.src;
+            const modalInstance = new bootstrap.Modal(cardModal);
+            modalInstance.show();
         } catch (error) {
             console.error('Failed to show enlarged card:', error);
-            statusMessage.textContent = 'Failed to show enlarged card';
-            statusMessage.classList.add('alert-warning');
+            if (statusMessage) {
+                statusMessage.textContent = 'Failed to show enlarged card';
+                statusMessage.classList.add('alert-warning');
+            }
         }
     }
 
