@@ -293,7 +293,7 @@ body {
     cursor: pointer;
     z-index: 2;
     transition: all 0.3s ease;
-    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 1)) brightness(1.2);  /* シャドウを強化し、明るさを上げる */
     animation: glowPulse 2s infinite;
 }
 
@@ -301,14 +301,14 @@ body {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    opacity: 0.8;
+    opacity: 1.0;  /* 0.8から1.0に変更 */
 }
 
 /* 光るアニメーション */
 @keyframes glowPulse {
-    0% { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8)); }
-    50% { filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9)); }
-    100% { filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8)); }
+    0% { filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9)) brightness(1.2); }
+    50% { filter: drop-shadow(0 0 8px rgba(255, 255, 255, 1)) brightness(1.4); }
+    100% { filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9)) brightness(1.2); }
 }
 
 .memory-card .magnifier:hover {
