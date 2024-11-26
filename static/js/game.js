@@ -132,7 +132,7 @@ async function preloadImages() {
         bgmPlayer = document.getElementById('bgm-sound');
 
         if (bgmPlayer) {
-            bgmPlayer.volume = 0.5;  // 音量を50%に変更
+            bgmPlayer.volume = 0.2;  // 音量を20%に変更（0.5から0.2へ）
             bgmPlayer.loop = true;
             
             // ページ読み込み直後にBGM再生を試みる
