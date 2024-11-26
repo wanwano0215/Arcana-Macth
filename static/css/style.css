@@ -285,7 +285,7 @@ body {
     right: 8px;
     width: 32px;
     height: 32px;
-    background-color: transparent;
+    background-color: rgba(255, 255, 255, 0.9);  /* 白い背景を追加 */
     border-radius: 50%;
     display: none;
     justify-content: center;
@@ -295,13 +295,15 @@ body {
     transition: all 0.3s ease;
     filter: drop-shadow(0 0 5px rgba(255, 215, 0, 1));
     animation: yellowGlow 2s infinite;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);  /* 影を追加して立体感を出す */
+    border: 2px solid white;  /* 白い枠線を追加 */
 }
 
 .memory-card .magnifier img {
-    width: 100%;
-    height: 100%;
+    width: 80%;  /* アイコンサイズを少し小さく */
+    height: 80%;
     object-fit: contain;
-    opacity: 0.8;
+    opacity: 1;  /* 不透明度を上げる */
 }
 
 /* 黄色く光るアニメーションをより明るく */
