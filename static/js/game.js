@@ -296,30 +296,31 @@ initializeAudio();
                     step: 0.1
                 });
 
-                // マウスホイールでのズーム
+                // Add mouse wheel zoom support
                 panzoomElement.parentElement.addEventListener('wheel', function(event) {
                     if (!event.shiftKey) return;
                     event.preventDefault();
                     panzoomInstance.zoomWithWheel(event);
                 });
 
-                // ダブルクリックでリセット
+                // Double-click to reset
                 panzoomElement.addEventListener('dblclick', function() {
                     panzoomInstance.reset({ animate: true });
                 });
-            }
 
-            // ローディング状態の解除
-            document.getElementById('enlarged-card').onload = () => {
+                }
+
+            // Remove loading state when image is loaded
+            const enlargedCard = document.getElementById('enlarged-card');
+            enlargedCard.onload = () => {
                 panzoomContainer.classList.remove('loading');
+                updateZoomLevel();
             };
 
         } catch (error) {
             console.error('Failed to initialize Panzoom:', error);
-            if (statusMessage) {
-                statusMessage.textContent = 'Failed to initialize zoom functionality';
-                statusMessage.classList.add('alert-warning');
-            }
+            statusMessage.textContent = 'Failed to initialize zoom functionality';
+            statusMessage.classList.add('alert-warning');
         }
     });
 
@@ -335,33 +336,17 @@ initializeAudio();
 
     function showEnlargedCard(card) {
         try {
-            // カードが裏返されているかチェック
-            if (!card.classList.contains('flipped') && !card.classList.contains('matched')) {
-                console.log('Card is not flipped or matched');
-                return;
-            }
-
             const cardImage = card.querySelector('.card-back img');
-            if (!cardImage || !cardImage.src) {
-                console.log('Card image not found');
-                return;
+            if (cardImage && cardImage.src) {
+                const enlargedCard = document.getElementById('enlarged-card');
+                enlargedCard.src = cardImage.src;
+                const modalInstance = new bootstrap.Modal(cardModal);
+                modalInstance.show();
             }
-
-            const enlargedCard = document.getElementById('enlarged-card');
-            if (!enlargedCard) {
-                console.log('Enlarged card element not found');
-                return;
-            }
-
-            enlargedCard.src = cardImage.src;
-            const modalInstance = new bootstrap.Modal(cardModal);
-            modalInstance.show();
         } catch (error) {
             console.error('Failed to show enlarged card:', error);
-            if (statusMessage) {
-                statusMessage.textContent = 'Failed to show enlarged card';
-                statusMessage.classList.add('alert-warning');
-            }
+            statusMessage.textContent = 'Failed to show enlarged card';
+            statusMessage.classList.add('alert-warning');
         }
     }
 
