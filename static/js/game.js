@@ -310,14 +310,13 @@ initializeAudio();
             }
 
             // ローディング状態の解除
-            const enlargedCard = document.getElementById('enlarged-card');
-            enlargedCard.onload = () => {
+            document.getElementById('enlarged-card').onload = () => {
                 panzoomContainer.classList.remove('loading');
             };
 
         } catch (error) {
             console.error('Failed to initialize Panzoom:', error);
-            if (statusMessage) {  // null チェックを追加
+            if (statusMessage) {
                 statusMessage.textContent = 'Failed to initialize zoom functionality';
                 statusMessage.classList.add('alert-warning');
             }
