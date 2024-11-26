@@ -296,31 +296,31 @@ initializeAudio();
                     step: 0.1
                 });
 
-                // Add mouse wheel zoom support
+                // マウスホイールでのズーム
                 panzoomElement.parentElement.addEventListener('wheel', function(event) {
                     if (!event.shiftKey) return;
                     event.preventDefault();
                     panzoomInstance.zoomWithWheel(event);
                 });
 
-                // Double-click to reset
+                // ダブルクリックでリセット
                 panzoomElement.addEventListener('dblclick', function() {
                     panzoomInstance.reset({ animate: true });
                 });
+            }
 
-                }
-
-            // Remove loading state when image is loaded
+            // ローディング状態の解除
             const enlargedCard = document.getElementById('enlarged-card');
             enlargedCard.onload = () => {
                 panzoomContainer.classList.remove('loading');
-                updateZoomLevel();
             };
 
         } catch (error) {
             console.error('Failed to initialize Panzoom:', error);
-            statusMessage.textContent = 'Failed to initialize zoom functionality';
-            statusMessage.classList.add('alert-warning');
+            if (statusMessage) {  // null チェックを追加
+                statusMessage.textContent = 'Failed to initialize zoom functionality';
+                statusMessage.classList.add('alert-warning');
+            }
         }
     });
 
