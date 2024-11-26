@@ -301,42 +301,14 @@ initializeAudio();
                     if (!event.shiftKey) return;
                     event.preventDefault();
                     panzoomInstance.zoomWithWheel(event);
-                    updateZoomLevel();
                 });
 
                 // Double-click to reset
                 panzoomElement.addEventListener('dblclick', function() {
                     panzoomInstance.reset({ animate: true });
-                    updateZoomLevel();
                 });
 
-                // Add zoom controls
-                const zoomIn = document.querySelector('.zoom-in');
-                const zoomOut = document.querySelector('.zoom-out');
-                const zoomReset = document.querySelector('.zoom-reset');
-
-                zoomIn.addEventListener('click', () => {
-                    panzoomInstance.zoomIn({ animate: true });
-                    updateZoomLevel();
-                });
-
-                zoomOut.addEventListener('click', () => {
-                    panzoomInstance.zoomOut({ animate: true });
-                    updateZoomLevel();
-                });
-
-                zoomReset.addEventListener('click', () => {
-                    panzoomInstance.reset({ animate: true });
-                    updateZoomLevel();
-                });
-            }
-
-            // Update zoom level display
-            function updateZoomLevel() {
-                const scale = panzoomInstance.getScale();
-                const percentage = Math.round(scale * 100);
-                document.querySelector('.zoom-level').textContent = `${percentage}%`;
-            }
+                }
 
             // Remove loading state when image is loaded
             const enlargedCard = document.getElementById('enlarged-card');
